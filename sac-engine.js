@@ -6,7 +6,7 @@ function number(v,name){if(typeof v!=='number'||!Number.isFinite(v))throw Error(
 function month(v){return String(v).slice(0,7)}
 function previous(table,key){const eligible=table.filter(x=>x.threshold<=key);if(!eligible.length)throw Error('Tabela sem faixa para '+key);return eligible.reduce((a,b)=>a.threshold>b.threshold?a:b)}
 function calculate(c,{expenses=null,programs=[],movements=[]}={}){
- if(c.principal!==339000)throw Error('O principal deve permanecer em R$339.000');
+ if(!Number.isFinite(c.principal)||c.principal<=0)throw Error('Informe um financiamento maior que zero');
  for(const k of ['construction','land','fgts','annualInterest','term','sale','investments','plr','biennialFgts','dfi','admin','insurance','area','reserveTarget'])number(c[k],k);
  if(c.term<1||!Number.isInteger(c.term)||c.annualInterest<=-1||c.area<=0)throw Error('Prazo, taxa ou área inválidos');
  const extras=expenses===null?sum(c.expenses.map(x=>number(x.amount,x.name))):sum(expenses.map(x=>number(x.planned,x.name)));
@@ -16,6 +16,10 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
  if(!Number.isInteger(constructionMonths)||constructionMonths<0||constructionMonths>=c.term)throw Error("Prazo de obra inválido");
  const releaseWeights=Array(constructionMonths).fill(0);if(constructionMonths){for(const x of c.schedule){let idx=c.dates.findIndex(d=>month(d)>=month(x.month));idx=Math.max(0,Math.min(constructionMonths-1,idx<0?constructionMonths-1:idx));releaseWeights[idx]+=Math.max(0,x.caixa)}if(!sum(releaseWeights))releaseWeights.fill(1)}
  const releases=releaseWeights.map(x=>c.principal*x/sum(releaseWeights));
+ const costRows=expenses===null?c.expenses.map(x=>({...x,planned:x.amount,paid:0})):expenses;
+ const deferred=c.trCapitalizes===false?0:sum(costRows.filter(x=>/m[oó]veis|eletro|sof[aá]|espelho|box|videoporteiro|fechadura|mesa/i.test(x.name)).map(x=>Math.max(0,x.planned-(x.paid||0))));
+ p.K6+=deferred;
+ const expenseTimeline=[];
  const sac=[],cash=[],allocation=[];let debt=constructionMonths?0:c.principal,reserve=p.K6;
  for(let i=0;i<c.dates.length;i++){
   const m=i+1,date=month(c.dates[i]),year=Number(date.slice(0,4)),mo=Number(date.slice(5,7));
@@ -62,8 +66,15 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   const distribution=allocation[i];
   distribution.totalToDebt=extra;distribution.totalToInvestment=appliedSalary+plrCash+extraProgram+autoCash;distribution.contributionTotal=distribution.totalToDebt+distribution.totalToInvestment;
   distribution.sources=[...(appliedSalary>0?['Salário']:[]),...(fgts>0?['FGTS']:[]),...(plrDebt>0||plrCash>0?['PLR']:[]),...(autoAmount>0||extraProgram>0?['Extra programado']:[]),...(requestedDebtPrograms>0?['Amortização programada']:[])];
-  const finalReserve=reserve+earnings+appliedSalary+plrCash+extraProgram+autoCash+manualIn-installment-manualOut;
-  cash.push({A:date,B:m,C:reserve,D:net,E:earnings,F:appliedSalary,G:plrCash+extraProgram+autoCash,H:installment,I:finalReserve,J:factor,manualIn,manualOut});
+  const furnitureMonth=i-constructionMonths;const deferredPayment=furnitureMonth>=0&&furnitureMonth<8?(furnitureMonth===7?deferred-Math.round(deferred/8*100)/100*7:Math.round(deferred/8*100)/100):0;
+  const contractorPayment=sum(c.schedule.filter(x=>month(x.month)===date).map(x=>x.payment));
+  const ownPayment=(i===0?extras-deferred:0)+deferredPayment;
+  const appliedFgts=Math.min(fgts,extra);
+  const ownContributions=appliedSalary+plrCash+extraProgram+autoCash+Math.max(0,extra-appliedFgts);
+  const financingFlow=installment+appliedFgts,ownFlow=ownPayment+ownContributions;
+  expenseTimeline.push({month:date,financing:financingFlow,contractor:contractorPayment,own:ownFlow,total:financingFlow+contractorPayment+ownFlow,furniture:deferredPayment,salary:appliedSalary,plr:plrCash+Math.min(plrDebt,Math.max(0,extra-appliedFgts)),fgts:appliedFgts,ownExpenses:ownPayment,ownContributions});
+  const finalReserve=reserve+earnings+appliedSalary+plrCash+extraProgram+autoCash+manualIn-installment-manualOut-deferredPayment;
+  cash.push({A:date,B:m,C:reserve,D:net,E:earnings,F:appliedSalary,G:plrCash+extraProgram+autoCash,H:installment,I:finalReserve,J:factor,manualIn,manualOut,deferredPayment});
   debt=closing;reserve=finalReserve;
  }
  const paidIndex=sac.findIndex((x,i)=>i>=constructionMonths&&x.M===0),paidMonths=paidIndex<0?null:paidIndex+1;
@@ -79,8 +90,9 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
  for(let i=6;i<=10;i++)helperSac['S'+i]=0;c.mipBands.forEach((x,i)=>helperSac['T'+(i+11)]=x.threshold);
  const helperCash={};c.cdi.forEach((x,i)=>helperCash['N'+(i+2)]=(1+x.annual*c.cdbShare)**(1/12)-1);[.225,.2,.175,.15].forEach((v,i)=>helperCash['R'+(i+2)]=1-v);
  [4,5,6,7,8,9,10,11,12].forEach((r,i)=>p['E'+r]=expenses===null?c.expenses[i].amount:(expenses.find(x=>x.id===c.expenses[i].id||x.name===c.expenses[i].name)?.planned??0));
+ const annualBalanceMap=new Map();expenseTimeline.forEach((x,i)=>{const year=x.month.slice(0,4);if(!annualBalanceMap.has(year))annualBalanceMap.set(year,{year,investment:0,salary:0,plr:0,fgts:0,extras:0,caixaRelease:0,caixa:0,contractor:0,others:0});const y=annualBalanceMap.get(year),a=cash[i],s=sac[i];y.investment+=a.E;y.salary+=x.salary;y.plr+=x.plr;y.fgts+=x.fgts+sum(c.schedule.filter(z=>month(z.month)===x.month).map(z=>z.fgts));y.extras+=Math.max(0,x.ownContributions-x.salary-x.plr)+a.manualIn;y.caixaRelease+=s.release;y.caixa+=s.L+s.K;y.contractor+=x.contractor;y.others+=x.ownExpenses+a.manualOut;});const annualBalance=[...annualBalanceMap.values()].map(x=>({...x,sources:x.investment+x.salary+x.plr+x.fgts+x.extras+x.caixaRelease,destinations:x.caixa+x.contractor+x.others,net:x.investment+x.salary+x.plr+x.fgts+x.extras+x.caixaRelease-x.caixa-x.contractor-x.others}));
  const helperSchedule={B5:scheduleTotals.construction,B6:scheduleTotals.caixa,B7:scheduleTotals.fgts,B8:scheduleTotals.own,E5:physical,E6:paid,E7:scheduleTotals.construction-paid,E8:scheduleTotals.gap};
- return {constructionMonths,releases,parameters:p,premises:prem,sac,cash,allocation,schedule,scheduleTotals,extras,helperSac,helperCash,helperSchedule,payoff:paidIndex<0?null:sac[paidIndex].A,warnings:[...(scheduleTotals.construction!==c.construction?['Valores literais do cronograma divergem do contrato atualizado']:[]),...(scheduleTotals.fgts!==c.fgts?['FGTS do cronograma difere do cenário']:[]),...(scheduleTotals.gap!==0?['Cronograma: diferença de fontes '+scheduleTotals.gap]:[]),...(c.fgts!==c.premiseFgts?['FGTS diverge entre abas']:[]),...(constructionMonths?['Obra estimada em '+constructionMonths+' meses: liberações proporcionais ao cronograma, ajustadas ao principal; encargos variáveis, sem parcela fixa de R$1.500. TR paga nos encargos durante obra; sem amortização regular. Extras e amortizações programadas ficam investidos até a conclusão. MIP usa o saldo liberado como aproximação.']:[]),'TR corrige o saldo antes de juros, amortização e MIP. J (seguros/FGHAB) não integra a parcela L.','H9, H12 e H13 não alimentam as fórmulas mensais da origem.']};
+ return {constructionMonths,releases,deferred,expenseTimeline,annualBalance,parameters:p,premises:prem,sac,cash,allocation,schedule,scheduleTotals,extras,helperSac,helperCash,helperSchedule,payoff:paidIndex<0?null:sac[paidIndex].A,warnings:[...(scheduleTotals.construction!==c.construction?['Valores literais do cronograma divergem do contrato atualizado']:[]),...(scheduleTotals.fgts!==c.fgts?['FGTS do cronograma difere do cenário']:[]),...(scheduleTotals.gap!==0?['Cronograma: diferença de fontes '+scheduleTotals.gap]:[]),...(c.fgts!==c.premiseFgts?['FGTS diverge entre abas']:[]),...(constructionMonths?['Obra estimada em '+constructionMonths+' meses: liberações proporcionais ao cronograma, ajustadas ao principal; encargos variáveis, sem parcela fixa de R$1.500. TR paga nos encargos durante obra; sem amortização regular. Extras e amortizações programadas ficam investidos até a conclusão. MIP usa o saldo liberado como aproximação.']:[]),'TR corrige o saldo antes de juros, amortização e MIP. J (seguros/FGHAB) não integra a parcela L.','H9, H12 e H13 não alimentam as fórmulas mensais da origem.']};
 }
 root.MinhaObraEngine={calculate};if(typeof module!=='undefined')module.exports=root.MinhaObraEngine;
 })(typeof globalThis!=='undefined'?globalThis:this);
