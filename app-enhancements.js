@@ -1,10 +1,10 @@
 'use strict';
 const Model=window.FinancialModel;
 NAV.splice(6,0,['summary','▦','Resumo']);TITLES.summary='Resumo financeiro';
-let summaryFilters={from:'2022-01',to:'2030-12'},modelCache=null;
+let summaryFilters={from:'2022-01',to:'2030-12'},modelCache=null,transactionCache=null;
 const originalAllTransactions=allTransactions;
-allTransactions=function(){return Model.enrich(originalAllTransactions(),data.sourceTables||{})};
-function invalidateModel(){modelCache=null}
+allTransactions=function(){if(!transactionCache||transactionCache.base!==data.transactions||transactionCache.tables!==data.sourceTables)transactionCache={base:data.transactions,tables:data.sourceTables,rows:Model.enrich(originalAllTransactions(),data.sourceTables||{})};return transactionCache.rows};
+function invalidateModel(){modelCache=null;transactionCache=null}
 const baseSaveManual=saveManual;
 saveManual=function(){invalidateModel();return baseSaveManual()};
 function calculations(){if(!modelCache){const transactions=allTransactions(),from='2000-01',to='2061-12',cdi=data.financingConfig?.cdi||[],annualCdi=settings.annualCdi===undefined?null:Number(settings.annualCdi);const investments=Model.investmentRows(transactions,data.initialBalances||[],data.sourceTables||{},{from,to,asOf:today.slice(0,7),cdi,annualCdi});let loans=[],error='';if(data.financingConfig)try{loans=Model.loanRows(data.financingConfig,transactions,window.MinhaObraEngine)}catch(e){error=e.message}modelCache={investments,loans,error}}return modelCache}
