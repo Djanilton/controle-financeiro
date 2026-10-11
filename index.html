@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0d1b2a">
+  <meta name="description" content="Controle particular de despesas, patrimônio, investimentos e empréstimos.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Controle das Finanças</title>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script>if(!window.msal)document.write('<script src="https://alcdn.msftauth.net/browser/2.38.3/js/msal-browser.min.js"><\/script>')</script>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script defer src="./app-core.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">CF</div>
+      <div><strong>Controle das Finanças</strong><small>Visão particular</small></div>
+    </div>
+    <nav id="nav" aria-label="Navegação principal"></nav>
+    <div class="privacy-note"><span>●</span> Seus dados ficam neste navegador ou no seu OneDrive.</div>
+  </aside>
+
+  <div class="shell">
+    <header class="topbar">
+      <button id="menuButton" class="icon-button mobile-only" aria-label="Abrir menu">☰</button>
+      <div>
+        <p class="eyebrow">CONTROLE PESSOAL</p>
+        <h1 id="pageTitle">Painel financeiro</h1>
+      </div>
+      <div class="top-actions">
+        <span id="accountBadge" class="account-badge">Microsoft desconectado</span>
+        <button class="primary" id="quickImport">Importar</button>
+      </div>
+    </header>
+    <main id="view" tabindex="-1"></main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <input id="fileInput" type="file" accept=".xlsx,.xlsm,.xls,.csv" multiple hidden>
+</body>
+</html>

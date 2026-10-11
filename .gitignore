@@ -1,0 +1,13 @@
+# Dados financeiros privados nunca devem entrar no repositório público.
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+*.pdf
+*.json
+!manifest.webmanifest
+!package.json
+backups/
+private/
+.DS_Store
+Thumbs.db
