@@ -117,4 +117,4 @@ function saveSettingsForm(e){e.preventDefault();settings={...settings,...formDat
 async function clearLocalData(){if(!confirm('Apagar todos os dados importados e lançamentos manuais deste navegador?'))return;data={transactions:[],netWorth:[],initialBalances:[],investments:[],loans:[],auxiliary:[],sources:[]};manual={transactions:[],investments:[],loans:[]};saveManual();await dbSet('main',data);render();toast('Dados locais apagados.')}
 
 async function init(){try{const cached=await dbGet('main');if(cached)data={...data,...cached}}catch(e){toast(`Armazenamento local: ${e.message}`)}$('quickImport').onclick=()=>{tab='import';render()};$('fileInput').onchange=e=>{importFiles([...e.target.files]).catch(err=>toast(`Importação: ${err.message}`));e.target.value=''};$('menuButton').onclick=()=>document.body.classList.toggle('menu-open');try{if(settings.clientId)await readyAuth()}catch{}render();if(user&&!data.sources.length)await importOneDriveWorkbook()}
-init();
+// A inicialização acontece após o carregamento dos cálculos e controles.
