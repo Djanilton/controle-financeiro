@@ -9,12 +9,23 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
   <title>Controle das Finanças</title>
-  <script src="./vendor/msal-browser.min.js"></script>
-  <script defer src="./vendor/xlsx.full.min.js"></script>
-  <script defer src="./app-core.js"></script>
-  <script defer src="./app.js"></script>
+  <script type="module">
+    const authResponse=window.opener&&/(?:[?#&])(?:code|error|error_description)=/i.test(window.location.href);
+    if(authResponse){
+      document.title='Conectando à Microsoft';
+      document.documentElement.classList.add('auth-bridge');
+      await import('./vendor/msal-redirect-bridge.min.js');
+      await window.msalRedirectBridge.broadcastResponseToMainFrame();
+    }else{
+      await import('./vendor/msal-browser.min.js');
+      await import('./vendor/xlsx.full.min.js');
+      await import('./app-core.js');
+      await import('./app.js');
+    }
+  </script>
 </head>
 <body>
+  <p class="auth-progress">Conectando à Microsoft…</p>
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-mark">CF</div>
