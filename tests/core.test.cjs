@@ -7,7 +7,7 @@ const Core=require('../app-core.js');
 test('login Microsoft usa a biblioteca MSAL hospedada no próprio aplicativo',()=>{
   const root=path.resolve(__dirname,'..');
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  assert.match(html,/import\('\.\/vendor\/msal-browser\.min\.js'\)/);
+  assert.match(html,/loadScript\('\.\/vendor\/msal-browser\.min\.js'\)/);
   assert.ok(fs.statSync(path.join(root,'vendor','msal-browser.min.js')).size>100_000);
   assert.doesNotMatch(html,/alcdn\.(?:msauth|msftauth)\.net/);
 });
@@ -25,7 +25,7 @@ test('login Microsoft usa a ponte de retorno exigida pelo MSAL 5',()=>{
 test('leitor de Excel também fica hospedado no aplicativo',()=>{
   const root=path.resolve(__dirname,'..');
   const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
-  assert.match(html,/import\('\.\/vendor\/xlsx\.full\.min\.js'\)/);
+  assert.match(html,/loadScript\('\.\/vendor\/xlsx\.full\.min\.js'\)/);
   assert.ok(fs.statSync(path.join(root,'vendor','xlsx.full.min.js')).size>500_000);
   assert.doesNotMatch(html,/cdn\.jsdelivr\.net\/npm\/xlsx/);
 });

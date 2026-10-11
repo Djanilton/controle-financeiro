@@ -9,19 +9,22 @@
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
   <title>Controle das Finanças</title>
-  <script type="module">
-    const authResponse=window.opener&&/(?:[?#&])(?:code|error|error_description)=/i.test(window.location.href);
-    if(authResponse){
-      document.title='Conectando à Microsoft';
-      document.documentElement.classList.add('auth-bridge');
-      await import('./vendor/msal-redirect-bridge.min.js');
-      await window.msalRedirectBridge.broadcastResponseToMainFrame();
-    }else{
-      await import('./vendor/msal-browser.min.js');
-      await import('./vendor/xlsx.full.min.js');
-      await import('./app-core.js');
-      await import('./app.js');
-    }
+  <script>
+    const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
+    window.addEventListener('DOMContentLoaded',async()=>{
+      const authResponse=window.opener&&/(?:[?#&])(?:code|error|error_description)=/i.test(window.location.href);
+      if(authResponse){
+        document.title='Conectando à Microsoft';
+        document.documentElement.classList.add('auth-bridge');
+        await loadScript('./vendor/msal-redirect-bridge.min.js');
+        await window.msalRedirectBridge.broadcastResponseToMainFrame();
+      }else{
+        await loadScript('./vendor/msal-browser.min.js');
+        await loadScript('./vendor/xlsx.full.min.js');
+        await loadScript('./app-core.js');
+        await loadScript('./app.js');
+      }
+    });
   </script>
 </head>
 <body>
