@@ -19,7 +19,10 @@ test('login Microsoft usa a ponte de retorno exigida pelo MSAL 5',()=>{
   assert.match(html,/msal-redirect-bridge\.min\.js/);
   assert.match(html,/broadcastResponseToMainFrame/);
   assert.ok(fs.statSync(path.join(root,'vendor','msal-redirect-bridge.min.js')).size>5_000);
-  assert.doesNotMatch(app,/handleRedirectPromise/);
+  assert.match(app,/loginPopup/);
+  assert.match(app,/loginRedirect/);
+  assert.match(app,/handleRedirectPromise/);
+  assert.match(app,/6735d0d9-9d62-44b7-b0f5-493359feabff/);
 });
 
 test('leitor de Excel também fica hospedado no aplicativo',()=>{
@@ -34,7 +37,7 @@ test('importação do arquivo consolidado lê somente as abas financeiras necess
   const app=fs.readFileSync(path.resolve(__dirname,'..','app.js'),'utf8');
   assert.match(app,/bookSheets:true/);
   assert.match(app,/dense:true,sheets:selected/);
-  assert.match(app,/FINANCE_SHEETS=.*Configurações.*Despesas.*Receitas.*Transferências.*Neos Prev.*INSS.*FGTS.*Investimentos.*Empréstimos/);
+  assert.match(app,/FINANCE_SHEETS=.*Configurações.*Despesas.*Receitas.*Transferências.*Neos Prev.*INSS.*FGTS.*Investimentos.*Empréstimos.*Resumo/);
 });
 
 test('converte números brasileiros e datas do Excel',()=>{
@@ -100,7 +103,7 @@ test('mapeia as abas consolidadas e usa saldos iniciais no lugar do antigo Resum
     Receitas:[{Pagamento:'25/09/2026',Descrição_Ori:'Salário',Valor:10000,Conta:'Itaú'}],
     Transferências:[{Pago:'26/09/2026',Descrição:'Reserva',Valor:1000,'Conta Origem':'Itaú','Conta Destino':'Sofisa'}],
     Configurações:[{Conta:'Itaú',Ano:2026,SaldoInicial:5000}],
-    Resumo:[{Mês:'30/09/2026',Total:250000,Invest:150000,Passivo:50000}],
+    Resumo:[{Mês:'30/09/2026',Total:250000,Invest:150000,Passivo:50000,Itaú:40000,Sofisa:30000,'Neos Prev':80000,Empréstimos:-50000}],
     Investimentos:[{Data:'30/09/2026',Descrição:'CDB',Realizado:50000,Projetado:60000}],
     Empréstimos:[{Data:'30/09/2026',Descrição:'Imóvel','Saldo Devedor':120000,'Saldo Projetado':110000}],
     'Neos Prev':[],INSS:[],FGTS:[]
@@ -109,7 +112,8 @@ test('mapeia as abas consolidadas e usa saldos iniciais no lugar do antigo Resum
   const XLSX={utils:{sheet_to_json:sheet=>sheet}};
   const mapped=Core.mapWorkbook(book,XLSX);
   assert.equal(mapped.transactions.length,3);
-  assert.equal(mapped.netWorth.length,0);
+  assert.equal(mapped.netWorth.length,1);
+  assert.deepEqual(mapped.netWorth[0].accounts,{itau:40000,sofisa:30000,neos:80000,caixaLoan:50000});
   assert.deepEqual(mapped.initialBalances[0],{account:'Itaú',year:2026,amount:5000});
   assert.equal(mapped.investments[0].projected,60000);
   assert.equal(mapped.loans[0].balance,120000);
