@@ -20,6 +20,13 @@ test('leitor de Excel também fica hospedado no aplicativo',()=>{
   assert.doesNotMatch(html,/cdn\.jsdelivr\.net\/npm\/xlsx/);
 });
 
+test('importação do arquivo consolidado lê somente as abas financeiras necessárias',()=>{
+  const app=fs.readFileSync(path.resolve(__dirname,'..','app.js'),'utf8');
+  assert.match(app,/bookSheets:true/);
+  assert.match(app,/dense:true,sheets:selected/);
+  assert.match(app,/FINANCE_SHEETS=.*Configurações.*Despesas.*Receitas.*Transferências.*Neos Prev.*INSS.*FGTS.*Investimentos.*Empréstimos/);
+});
+
 test('converte números brasileiros e datas do Excel',()=>{
   assert.equal(Core.number('R$ 1.234,56'),1234.56);
   assert.equal(Core.number('1234.56'),1234.56);

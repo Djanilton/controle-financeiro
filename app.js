@@ -15,6 +15,15 @@ let tab='dashboard',page=0,editMode='',filters=blankFilters(),expenseFilters={..
 let data={transactions:[],netWorth:[],initialBalances:[],investments:[],loans:[],auxiliary:[],sources:[]};
 let manual=loadJson(MANUAL,{transactions:[],investments:[],loans:[]});
 let settings=loadJson(STORAGE,{clientId:localStorage.getItem('minha-obra-clientid')||'',workbookPath:'Controle das finanças.xlsm',reportsFolder:'Extratos'});
+const FINANCE_SHEETS=['Configurações','Despesas','Receitas','Transferências','Neos Prev','INSS','FGTS','Investimentos','Empréstimos'];
+function readFinanceWorkbook(buffer){
+  const meta=XLSX.read(buffer,{type:'array',bookSheets:true}),names=meta.SheetNames||[],normalized=names.map(Core.normalize);
+  const consolidated=normalized.includes('despesas')&&normalized.includes('receitas');
+  const selected=consolidated?FINANCE_SHEETS.map(wanted=>names.find(name=>Core.normalize(name)===Core.normalize(wanted))).filter(Boolean):names.slice(0,1);
+  const book=XLSX.read(buffer,{type:'array',dense:true,sheets:selected});
+  book.SheetNames=names;
+  return book;
+}
 function loadJson(key,fallback){try{return {...fallback,...JSON.parse(localStorage.getItem(key)||'{}')}}catch{return fallback}}
 function saveManual(){localStorage.setItem(MANUAL,JSON.stringify(manual))}
 function saveSettings(){localStorage.setItem(STORAGE,JSON.stringify(settings))}
@@ -69,7 +78,7 @@ function saveInvestment(e){e.preventDefault();const x=formData(e.currentTarget);
 function saveLoan(e){e.preventDefault();const x=formData(e.currentTarget);manual.loans.push({...x,id:uid(),balance:Core.number(x.balance),projected:Core.number(x.projected),installment:Core.number(x.installment),rate:Core.number(x.rate),source:'Manual'});saveManual();editMode='';render();toast('Empréstimo salvo neste navegador.')}
 function removeManual(kind,id){if(!confirm('Excluir este registro manual?'))return;const key=kind==='investment'?'investments':'loans';manual[key]=manual[key].filter(x=>x.id!==id);saveManual();render()}
 
-async function importFiles(files){if(!window.XLSX)throw Error('Leitor de planilhas indisponível. Verifique a conexão e recarregue.');for(const file of files){toast(`Lendo ${file.name}…`);const book=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});const mapped=Core.mapReport(book,XLSX,file.name);mergeImport(mapped,book.SheetNames.length>3)}await dbSet('main',data);render();toast('Importação concluída. Os dados ficaram neste navegador.')}
+async function importFiles(files){if(!window.XLSX)throw Error('Leitor de planilhas indisponível. Verifique a conexão e recarregue.');for(const file of files){toast(`Lendo ${file.name}…`);const book=readFinanceWorkbook(await file.arrayBuffer());const mapped=Core.mapReport(book,XLSX,file.name);mergeImport(mapped,book.SheetNames.length>3)}await dbSet('main',data);render();toast('Importação concluída. Os dados ficaram neste navegador.')}
 function mergeImport(mapped,replace){if(replace){data={transactions:mapped.transactions||[],netWorth:mapped.netWorth||[],initialBalances:mapped.initialBalances||[],investments:mapped.investments||[],loans:mapped.loans||[],auxiliary:mapped.auxiliary||[],sources:[mapped.source]};return}const key=x=>[x.kind,x.date,x.description,x.amount,x.account].join('|');const addUnique=(a,b)=>[...new Map([...a,...b].map(x=>[key(x),x])).values()];data.transactions=addUnique(data.transactions,mapped.transactions||[]);data.netWorth=addUnique(data.netWorth,mapped.netWorth||[]);data.initialBalances=mapped.initialBalances?.length?mapped.initialBalances:data.initialBalances;data.investments=addUnique(data.investments,mapped.investments||[]);data.loans=addUnique(data.loans,mapped.loans||[]);data.auxiliary=addUnique(data.auxiliary,mapped.auxiliary||[]);data.sources.push(mapped.source)}
 
 function redirectUri(){return location.hostname==='djanilton.github.io'?'https://djanilton.github.io/controle-financeiro/':location.origin+location.pathname}
@@ -78,7 +87,7 @@ async function login(){try{await readyAuth();if(!user){const response=await auth
 async function token(){await readyAuth();if(!user)await login();if(!user)throw Error('Conexão Microsoft não concluída.');try{return (await auth.acquireTokenSilent({account:user,scopes:['User.Read','Files.Read']})).accessToken}catch{return (await auth.acquireTokenPopup({account:user,scopes:['User.Read','Files.Read']})).accessToken}}
 const graphPath=p=>p.split('/').filter(Boolean).map(encodeURIComponent).join('/');
 async function graph(url){const r=await fetch('https://graph.microsoft.com/v1.0'+url,{headers:{Authorization:'Bearer '+await token()}});if(!r.ok)throw Error(`OneDrive HTTP ${r.status}: ${(await r.text()).slice(0,140)}`);return r}
-async function workbookFromBuffer(buffer,name){const book=XLSX.read(buffer,{type:'array',cellDates:true});const mapped=Core.mapReport(book,XLSX,name);mergeImport(mapped,book.SheetNames.length>3)}
+async function workbookFromBuffer(buffer,name){const book=readFinanceWorkbook(buffer);const mapped=Core.mapReport(book,XLSX,name);mergeImport(mapped,book.SheetNames.length>3)}
 async function findOneDriveItem(pathOrName,wantFolder=false){if(pathOrName.includes('/')){const r=await graph(`/me/drive/root:/${graphPath(pathOrName)}`);return r.json()}const r=await graph(`/me/drive/root/search(q='${encodeURIComponent(pathOrName.replace(/'/g,"''"))}')?$top=100`),items=(await r.json()).value;return items.find(x=>x.name===pathOrName&&(wantFolder?!!x.folder:!!x.file))}
 async function importOneDriveWorkbook(){try{toast('Procurando a planilha no OneDrive…');const item=await findOneDriveItem(settings.workbookPath);if(!item)throw Error('Planilha não encontrada. Confira o nome ou caminho em Configurações.');const r=await graph(`/me/drive/items/${encodeURIComponent(item.id)}/content`);await workbookFromBuffer(await r.arrayBuffer(),item.name);await dbSet('main',data);render();toast('Controle das finanças atualizado pelo OneDrive.')}catch(e){toast(`Importação: ${e.message}`)}}
 function reportType(name){const n=Core.normalize(name);return ['despesa','receita','transfer','neos','inss','fgts'].find(x=>n.includes(x))||''}
