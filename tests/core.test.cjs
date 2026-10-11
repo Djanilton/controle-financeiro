@@ -1,6 +1,16 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
 const Core=require('../app-core.js');
+
+test('login Microsoft usa a biblioteca MSAL hospedada no próprio aplicativo',()=>{
+  const root=path.resolve(__dirname,'..');
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  assert.match(html,/src="\.\/vendor\/msal-browser\.min\.js"/);
+  assert.ok(fs.statSync(path.join(root,'vendor','msal-browser.min.js')).size>100_000);
+  assert.doesNotMatch(html,/alcdn\.(?:msauth|msftauth)\.net/);
+});
 
 test('converte números brasileiros e datas do Excel',()=>{
   assert.equal(Core.number('R$ 1.234,56'),1234.56);
