@@ -7,7 +7,7 @@
   <meta name="description" content="Controle particular de despesas, patrimônio, investimentos e empréstimos.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20261011-2">
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
@@ -21,8 +21,8 @@
       }else{
         await loadScript('./vendor/msal-browser.min.js');
         await loadScript('./vendor/xlsx.full.min.js');
-        await loadScript('./app-core.js');
-        await loadScript('./app.js');
+        await loadScript('./app-core.js?v=20261011-2');
+        await loadScript('./app.js?v=20261011-2');
       }
     });
   </script>
