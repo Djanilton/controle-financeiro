@@ -21,9 +21,14 @@ function fundingPlan(result,positions,asOf,transactions=[]){
   if(!valid){continuity=false;for(const name of banks){const source=positionIndex.get(name+'|'+month);if(source)replacements.set(name+'|'+month,{...source,closing:null,available:false})}rows.push({month,requested,sofisa:null,itau:null,shortfall:null,available:false});continue}
   const plannedInflow=Math.max(0,(cash?.F||0)+(cash?.G||0)+(cash?.manualIn||0)),reportedInflow=Math.max(0,next.Sofisa.transfers+next['Itaú'].transfers),additionalInflow=Math.max(0,plannedInflow-reportedInflow);
   next.Sofisa.transfers+=additionalInflow;next.Sofisa.closing+=additionalInflow;
+  // Existing projected outflows can already overdraw an application. Complement
+  // them from the other investment, and expose any unpaid amount explicitly.
+  let baseShortfall=0;
+  for(const name of banks){const other=name==='Sofisa'?'Itaú':'Sofisa',deficit=Math.max(0,-next[name].closing),complement=Math.min(deficit,Math.max(0,next[other].closing));if(complement){next[name].transfers+=complement;next[name].closing+=complement;next[other].transfers-=complement;next[other].closing-=complement}const unpaid=Math.max(0,-next[name].closing);next[name].unfundedOutflow=unpaid;baseShortfall+=unpaid;next[name].closing+=unpaid}
   const allocation=allocateWithdrawal(requested,next.Sofisa.closing,next['Itaú'].closing);
+  allocation.shortfall+=baseShortfall;
   for(const name of banks){const withdrawal=name==='Sofisa'?allocation.sofisa:allocation.itau;next[name].expenses+=withdrawal;next[name].closing-=withdrawal;next[name].constructionWithdrawal=withdrawal;balance[name]=next[name].closing;replacements.set(name+'|'+month,next[name])}
-  rows.push({month,...allocation,additionalInflow,sofisaClosing:balance.Sofisa,itauClosing:balance['Itaú'],available:true})
+  rows.push({month,...allocation,baseShortfall,additionalInflow,sofisaClosing:balance.Sofisa,itauClosing:balance['Itaú'],available:true})
  }
  return {positions:positions.map(x=>replacements.get(x.institution+'|'+x.month)||x),rows,error:''}
 }
