@@ -11,3 +11,12 @@ assert.ok(vm.runInContext("NAV.findIndex(x=>x[0]==='transactions')<NAV.findIndex
 assert.ok(vm.runInContext("summaryView().includes('table-wrap freeze-month')",context));
 assert.ok(vm.runInContext("tableView(['Mês','Valor'],[]).includes('freeze-month')",context));
 console.log('Tooltip único, ordem das abas e mês fixo OK');
+assert.ok(vm.runInContext("NAV.findIndex(x=>x[0]==='summary')===NAV.findIndex(x=>x[0]==='reserve')+1",context));
+for(const view of ['loansView','reserveView'])assert.ok(!vm.runInContext(view+'()',context).includes('id="importConstruction"'));
+assert.ok(vm.runInContext('settingsView()',context).includes('id="importConstruction"'));
+console.log('Resumo após reserva; sincronização manual somente em configurações OK');
+context.structuredClone=structuredClone;context.projectionFixture=require('./construction-fixture.cjs').fixture;
+vm.runInContext("const synthetic=projectionFixture();synthetic.firstStage=600000;synthetic.stages=[{name:'1ª etapa',amount:600000,share:1,startMonth:'2020-01',endMonth:'2020-01'}];data.constructionSnapshot={meta:{engine:{config:synthetic},landPaid:200000},items:{gastos:[],meses:[],materiais:[]}};data.initialBalances=[{account:'Sofisa',year:2026,amount:200000},{account:'Investimento Itaú',year:2026,amount:100000}];invalidateModel();",context);
+const reserve=vm.runInContext('reserveView()',context);
+assert.ok(reserve.includes('Formação da reserva'));assert.ok(reserve.includes('Salário necessário'));assert.ok(!reserve.includes('NaN'));assert.ok(!reserve.includes('id="importConstruction"'));
+console.log('Reserva completa com motor real e dados sintéticos OK');
