@@ -48,6 +48,14 @@ Permissões delegadas usadas: `User.Read` e `Files.Read`. Para editar os registr
 
 Os saldos disponíveis não são constantes gravadas no código. O aplicativo parte dos movimentos e saldos iniciais do `Controle das finanças.xlsm`, normaliza os nomes das contas e considera somente **Sofisa** e **Investimento Itaú** para a reserva da obra. Venda da casa, terreno e etapas já pagas permanecem históricos e não são somados ou descontados novamente.
 
+### Estratégia mista da PLR e prevenção de insuficiências
+
+O modo **Equilibrado** usa o mesmo motor SAC e de caixa. Simula divisões da PLR entre reserva e amortização e escolhe, entre as divisões testadas, primeiro a menor insuficiência e depois o menor salário total. A PLR mista entra em abril; durante a obra e após quitar a dívida, a parcela sem destino de amortização permanece na reserva. Amortização que exceda o saldo devedor retorna à reserva.
+
+O planejamento percorre os compromissos futuros de trás para frente para determinar a cobertura necessária. Pode antecipar aportes do salário para meses anteriores à falta de recursos, mas nunca ultrapassa os limites cadastrados. Esses aportes aparecem separadamente nas tabelas. A taxa conservadora da cobertura usa a menor remuneração das duas aplicações; o fluxo final é recalculado por banco, com Sofisa antes de Itaú. Se os recursos não bastarem, a insuficiência continua explícita: o aplicativo não cria renda nem apenas esconde a falta com um saldo zerado.
+
+A atualização aplica essa política uma vez, preservando a configuração anterior no armazenamento privado e usando o backup e controle de conflito existentes para sincronizar a alteração. A planilha original e sua regra histórica não são modificadas. O Resumo distingue custo do projeto, valores pagos, recursos reservados e disponibilidade mensal. Documentos e anexos contratuais aparecem em um único quadro. Erros das primeiras importações deixam a lista ativa, com uma cópia privada recuperável; novos erros continuam visíveis.
+
 ## Desenvolvimento
 
 O projeto é estático e não exige instalação. Sirva a pasta por HTTP para testar. Os testes do núcleo rodam com:
