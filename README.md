@@ -28,7 +28,11 @@ A área **Contracheques** lê as abas anuais da planilha histórica, calcula os 
 
 Em **Importar**, o botão **Importar todos os relatórios** verifica contracheques, despesas/receitas/transferências e extratos NEOS/FGTS/INSS. Os caminhos ficam em Configurações. O histórico anterior de contracheques vem da planilha e os PDFs do ano atual são examinados nas subpastas anuais. PDFs antigos também podem ser selecionados localmente. Os leitores aceitam PDFs com texto selecionável, Excel e CSV. Arquivos digitalizados sem texto exigem outra fonte.
 
-A verificação acontece ao entrar na Microsoft e a cada cinco minutos enquanto o aplicativo está aberto e visível, além do botão manual. Ela usa a conexão do próprio navegador e não executa tarefas do Codex. Metadados do OneDrive evitam baixar novamente arquivos inalterados. Os registros importados permanecem no armazenamento privado de cada navegador e podem ser reconstruídos dos mesmos arquivos do OneDrive em outro dispositivo. Nenhuma planilha ou PDF original é sobrescrito.
+A leitura das fontes acontece somente por ação explícita em **Importar**. A busca de contracheques limita-se ao ano selecionado e ignora outros arquivos da pasta. A planilha histórica é usada na carga inicial, sem reimportação a cada entrada.
+
+Após conectar à Microsoft, o aplicativo sincroniza sua própria base privada `controle-financeiro-app.json` no OneDrive. Edições de transações são salvas localmente e enviadas após alguns segundos; outras sessões verificam os metadados a cada minuto, sem varrer planilhas ou PDFs. Em **Configurações > Base privada do aplicativo**, autorize a gravação uma vez. Existem exportação, cópia anterior à substituição e proteção por ETag contra gravações concorrentes. Conflitos preservam as alterações locais e exigem conferência; não são resolvidos por sobrescrita silenciosa. Nenhuma planilha ou PDF original é sobrescrito.
+
+O resumo financeiro mensal fica em **Projeção reserva**; a formação da reserva fica somente em **Construção > Resumo**. Documentos e anexos ficam reunidos às obrigações contratuais. As configurações da construção estão nas configurações gerais.
 
 PDF.js 5.4.624 (compilação de compatibilidade) é distribuído em `vendor/` sob Apache 2.0, com licença incluída.
 
