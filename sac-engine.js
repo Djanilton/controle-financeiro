@@ -30,6 +30,9 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
  const availableCapital=currentFunds?c.investments:capital;
  const funding={currentFunds,capital:availableCapital,ownConstructor,constructorAlreadyPaid,ownConstructorRemaining,landRemaining,otherRemaining,otherUpfront,deferred,afterConstructor:availableCapital-ownConstructorRemaining,afterAll:availableCapital-ownConstructorRemaining-landRemaining-otherRemaining,initialShortfall:0};
  if(currentFunds){p.H5=ownConstructorRemaining+landRemaining;p.K3=ownConstructorRemaining+landRemaining+otherRemaining;const opening=availableCapital-ownConstructorRemaining-landRemaining-otherUpfront;funding.initialShortfall=Math.max(0,-opening);p.K6=Math.max(0,opening)}funding.startingReserve=p.K6;
+ const asOfDate=c.projectionAsOfDate,anchorMonth=asOfDate?.slice(0,7),bankMode=currentFunds&&anchorMonth&&c.bankBalances&&['sofisa','itau'].every(k=>Number.isFinite(c.bankBalances[k])&&c.bankBalances[k]>=0);
+ let banks=bankMode?{...c.bankBalances}:null;if(banks){let reserveNeed=ownConstructorRemaining+landRemaining+otherUpfront;for(const key of ['sofisa','itau']){const used=Math.min(reserveNeed,banks[key]);banks[key]-=used;reserveNeed-=used;}}
+ funding.asOfDate=asOfDate||null;funding.bankInitialReserve=banks?{...banks}:null;
  const expenseTimeline=[];
  const sac=[],cash=[],allocation=[];let debt=constructionMonths?0:c.principal,reserve=p.K6,uncovered=funding.initialShortfall;
  for(let i=0;i<c.dates.length;i++){
@@ -48,12 +51,12 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   const plrDebt=!inConstruction&&debt>0&&c.strategy==='Finan'&&m%12===0?c.plr:0;
   for(const x of programs)if(!Number.isFinite(x.valor)||x.valor<0||!Number.isInteger(x.inicio)||!Number.isInteger(x.fim)||x.inicio<1||x.fim<x.inicio)throw Error('Programação de aporte inválida');
   const scheduled=programs.filter(x=>m>=x.inicio&&m<=x.fim);
-  const requestedDebtPrograms=sum(scheduled.filter(x=>x.tipo==='amortizacao').map(x=>number(x.valor,'aporte')));
+  const requestedDebtPrograms=bankMode&&date===anchorMonth&&c.skipCurrentUndatedInflows?0:sum(scheduled.filter(x=>x.tipo==='amortizacao').map(x=>number(x.valor,'aporte')));
   const debtPrograms=inConstruction?0:requestedDebtPrograms;
   // Compare marginal savings: fixed DFI/admin do not fall with a partial amortization.
   const financeRate=debt>0?((1+tr)*(1+p.H7)-1)+(1+tr)*previous(c.mipBands,m).rate:0;
   const destination=!inConstruction&&debt>0&&net<=financeRate?'amortizacao':'investimento';
-  const autoAmount=sum(scheduled.filter(x=>x.tipo==='automatico'||x.tipo==='extra'&&c.autoExtras!==false).map(x=>x.valor));
+  const autoAmount=bankMode&&date===anchorMonth&&c.skipCurrentUndatedInflows?0:sum(scheduled.filter(x=>x.tipo==='automatico'||x.tipo==='extra'&&c.autoExtras!==false).map(x=>x.valor));
   const autoDebt=destination==='amortizacao'?autoAmount:0;
   const availableDebt=Math.max(0,correctedDebt-amortization);
   const baseDebt=Math.min(availableDebt,fgts+plrDebt+debtPrograms);
@@ -68,16 +71,18 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   const age=c.ages[i];
   const s={A:date,B:m,C:debt,D:tr,E:interest,F:amortization,G:mip,H:c.dfi,I:c.admin,J:insurance,K:extra,L:installment,M:closing,N:!inConstruction&&closing===0?'Sim':'Não',O:age,phase:inConstruction?'Construção':'Amortização',release,correction:correctedDebt-debt,correctedDebt};
   sac.push(s);
-  const earnings=(currentFunds?Math.max(0,reserve):reserve)*net,plrCash=c.strategy==='CDB'&&mo===4?c.plr*c.plrCashFactor:inConstruction&&c.strategy==='Finan'&&m%12===0?c.plr:0;
+  const activeBanks=bankMode&&date>=anchorMonth,currentMonth=bankMode&&date===anchorMonth,days=currentMonth?new Date(Date.UTC(year,mo,0)).getUTCDate():1,remaining=currentMonth?(days-Number(asOfDate.slice(8,10)))/days:1;
+  const bankOpening=activeBanks?{...banks}:null,bankEarnings=activeBanks?Object.fromEntries(['sofisa','itau'].map(key=>[key,banks[key]*((1+((1+annual*(key==='sofisa'?c.cdbShare:c.itauCdiShare??1))**(1/12)-1)*factor)**remaining-1)])):null;
+  const earnings=activeBanks?sum(Object.values(bankEarnings)):(currentFunds?Math.max(0,reserve):reserve)*net,cashRate=activeBanks?(reserve?earnings/reserve:0):net,plrCash=currentMonth&&c.skipCurrentUndatedInflows?0:c.strategy==='CDB'&&mo===4?c.plr*c.plrCashFactor:inConstruction&&c.strategy==='Finan'&&m%12===0?c.plr:0;
   const baseSalary=date<c.salaryStart?0:date<=c.salaryStep?c.salaryFirst:c.salaryLater;
-  const salProgram=sum(scheduled.filter(x=>x.tipo==='salario').map(x=>number(x.valor,'salário'))),extraProgram=sum(scheduled.filter(x=>x.tipo==='extra'&&c.autoExtras===false).map(x=>number(x.valor,'aporte extra')));
-  const manual=movements.filter(x=>month(x.competencia)===date),manualIn=sum(manual.map(x=>Number(x.entrada)||0)),manualOut=sum(manual.map(x=>Number(x.saida)||0));
-  const furnitureMonth=i-constructionMonths;const deferredPayment=furnitureMonth>=0&&furnitureMonth<8?(furnitureMonth===7?deferred-Math.round(deferred/8*100)/100*7:Math.round(deferred/8*100)/100):0;
+  const salProgram=sum(scheduled.filter(x=>x.tipo==='salario').map(x=>number(x.valor,'salário'))),extraProgram=currentMonth&&c.skipCurrentUndatedInflows?0:sum(scheduled.filter(x=>x.tipo==='extra'&&c.autoExtras===false).map(x=>number(x.valor,'aporte extra')));
+  const manual=movements.filter(x=>month(x.competencia)===date&&(!currentMonth||!c.skipCurrentUndatedInflows||String(x.data||x.competencia).length>=10&&String(x.data||x.competencia)>asOfDate)),manualIn=sum(manual.map(x=>Number(x.entrada)||0)),manualOut=sum(manual.map(x=>Number(x.saida)||0));
+  const anchorIndex=bankMode?c.dates.findIndex(d=>String(d).slice(0,7)>=anchorMonth):0,furnitureStart=bankMode?Math.max(constructionMonths,anchorIndex):constructionMonths,furnitureCount=bankMode?Math.max(1,8-Math.max(0,anchorIndex-constructionMonths)):8,furnitureMonth=i-furnitureStart;const deferredPayment=furnitureMonth>=0&&furnitureMonth<furnitureCount?(furnitureMonth===furnitureCount-1?deferred-Math.round(deferred/furnitureCount*100)/100*(furnitureCount-1):Math.round(deferred/furnitureCount*100)/100):0;
   const availableInvestment=Math.max(0,reserve)+earnings+plrCash+extraProgram+autoCash+manualIn;
   const salaryNeed=currentFunds?Math.max(0,outstandingInstallment+deferredPayment+manualOut-availableInvestment):Math.max(0,c.reserveTarget-(reserve+earnings+plrCash-installment));
   const salary=Math.min(baseSalary,salaryNeed);
   // Explicit salary programs replace the automatic capped salary only in their range.
-  const appliedSalary=scheduled.some(x=>x.tipo==='salario')?salProgram:salary;
+  const appliedSalary=scheduled.some(x=>x.tipo==='salario')&&!(currentMonth&&c.skipCurrentUndatedInflows)?(currentFunds?Math.min(salProgram,salaryNeed):salProgram):salary;
   const distribution=allocation[i];
   distribution.totalToDebt=extra;distribution.totalToInvestment=appliedSalary+plrCash+extraProgram+autoCash;distribution.contributionTotal=distribution.totalToDebt+distribution.totalToInvestment;
   distribution.sources=[...(appliedSalary>0?['Salário']:[]),...(fgts>0?['FGTS']:[]),...(plrDebt>0||plrCash>0?['PLR']:[]),...(autoAmount>0||extraProgram>0?['Extra programado']:[]),...(requestedDebtPrograms>0?['Amortização programada']:[])];
@@ -90,7 +95,8 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   const rawReserve=reserve+earnings+appliedSalary+plrCash+extraProgram+autoCash+manualIn-installment+paidCurrent-manualOut-deferredPayment,unfunded=currentFunds?Math.max(0,-rawReserve):0,finalReserve=currentFunds?Math.max(0,rawReserve):rawReserve;
   const paymentFromInvestment=Math.min(outstandingInstallment,Math.max(0,availableInvestment)),paymentFromSalary=Math.min(Math.max(0,outstandingInstallment-paymentFromInvestment),appliedSalary);
   if(currentFunds&&c.projectionStart&&date<c.projectionStart){cash.push({A:date,B:m,C:reserve,D:net,E:0,F:0,G:0,H:installment,I:reserve,J:factor,manualIn:0,manualOut:0,deferredPayment:0,unfunded:0,projectedBalance:reserve-uncovered,paymentFromInvestment:0,paymentFromSalary:0,historical:true});debt=closing;continue}
-  uncovered+=unfunded;cash.push({A:date,B:m,C:reserve,D:net,E:earnings,F:appliedSalary,G:plrCash+extraProgram+autoCash,H:outstandingInstallment,I:finalReserve,J:factor,manualIn,manualOut,deferredPayment,unfunded,paidCurrent,projectedBalance:finalReserve-uncovered,paymentFromInvestment,paymentFromSalary});
+  let bankWithdrawal=null,bankClosing=null,bankSalaryUsed=0;if(activeBanks){banks.sofisa+=bankEarnings.sofisa+plrCash+extraProgram+autoCash+manualIn;banks.itau+=bankEarnings.itau;let need=outstandingInstallment+deferredPayment+manualOut;bankWithdrawal={sofisa:0,itau:0};for(const key of ['sofisa','itau']){bankWithdrawal[key]=Math.min(Math.max(0,need),Math.max(0,banks[key]));banks[key]-=bankWithdrawal[key];need-=bankWithdrawal[key]}bankSalaryUsed=Math.min(Math.max(0,need),appliedSalary);banks.sofisa+=Math.max(0,appliedSalary-bankSalaryUsed);bankClosing={...banks};if(Math.abs(banks.sofisa+banks.itau-finalReserve)>.005)throw Error('Reserva por aplicação não reconciliada em '+date);}
+  uncovered+=unfunded;cash.push({A:date,B:m,C:reserve,D:cashRate,E:earnings,F:appliedSalary,G:plrCash+extraProgram+autoCash,H:outstandingInstallment,I:finalReserve,J:factor,manualIn,manualOut,deferredPayment,unfunded,paidCurrent,projectedBalance:finalReserve-uncovered,paymentFromInvestment,paymentFromSalary,bankOpening,bankEarnings,bankWithdrawal,bankClosing,bankSalaryUsed});
   debt=closing;reserve=finalReserve;
  }
  const paidIndex=sac.findIndex((x,i)=>i>=constructionMonths&&x.M===0),paidMonths=paidIndex<0?null:paidIndex+1;

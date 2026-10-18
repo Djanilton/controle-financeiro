@@ -1,0 +1,55 @@
+/* Área única da construção. Nunca grava no arquivo legado ou nas planilhas. */
+'use strict';
+NAV.splice(NAV.findIndex(x=>x[0]==='reserve'),0,['construction','⌂','Construção']);TITLES.construction='Construção';
+const CONSTRUCTION_FILE=ConstructionMigration.FILE,CONSTRUCTION_FOLDER='Aplicativos/Minha Obra';
+let constructionSection=localStorage.getItem('controle-construcao-secao')||'resumo',constructionFrame=null,constructionRemote=null;
+const sections=[['premissas','Premissas'],['resumo','Resumo'],['gastos','Despesas'],['cronograma','Cronograma físico-financeiro'],['contrato','Obrigações e pendências contratuais'],['documentos','Documentos e anexos'],['config','Configurações']];
+const sectionKeys=new Set(sections.map(x=>x[0]));
+if(!sectionKeys.has(constructionSection))constructionSection='resumo';
+function canonicalLocal(){try{const s=JSON.parse(localStorage.getItem(ConstructionMigration.STORAGE));return ConstructionMigration.valid(s)?s:null}catch{return null}}
+const oldProjectState=projectState;projectState=function(){return canonicalLocal()||oldProjectState()};
+financingInputs=function(){return projectState()?.meta?.engine?.config||data.financingConfig};
+constructionControls=function(){return '<article class="card"><h2>Cenário integrado da construção</h2><p>Premissas, despesas e cronograma são editados somente em Construção. O saldo bancário importado é separado da reserva projetada.</p><button onclick="ConstructionHost.open(\'premissas\')">Abrir Premissas</button></article>'};
+function acceptConstruction(s){if(!ConstructionMigration.valid(s))throw Error('Base da construção inválida');data.constructionSnapshot=structuredClone(s);data.financingConfig=s.meta?.engine?.config;constructionCache=null;linkedCalculationCache=null;invalidateModel();dbSet('main',data).catch(console.error)}
+async function constructionFind(name){try{return await (await graph('/me/drive/root:/'+graphPath(CONSTRUCTION_FOLDER+'/'+name),{silent:true})).json()}catch(e){if(!e.message.includes('404'))throw e}const found=await findOneDriveItem(name,false,{silent:true});return found?.name===name?found:null}
+async function constructionRead(){await readyAuth();if(!user)throw Error('Entre com Microsoft no Controle Financeiro.');let item=await constructionFind(CONSTRUCTION_FILE),canonical=!!item;
+ if(!item)item=await constructionFind('dados-completos.json');
+ if(!item)throw Error('Base privada da construção não encontrada. Informe a localização em Configurações.');
+ const remote=await (await graph('/me/drive/items/'+encodeURIComponent(item.id)+'/content',{silent:true})).json();
+ if(!ConstructionMigration.valid(remote))throw Error('Arquivo privado inválido; a última cópia foi preservada.');
+ constructionRemote={p:'/me/drive/items/'+encodeURIComponent(item.id),item,etag:item.eTag||item.cTag,data:remote,canonical};
+ return constructionRemote;
+}
+async function constructionWriteToken(interactive=false){await readyAuth();if(!user)throw Error('Entre com Microsoft primeiro.');const request={account:user,scopes:['User.Read','Files.ReadWrite']};try{return (await auth.acquireTokenSilent(request)).accessToken}catch(e){if(!interactive)throw Error('Autorize a gravação da construção em Configurações. O rascunho local está preservado.');return (await auth.acquireTokenPopup(request)).accessToken}}
+async function authorizedWrite(path,body,etag,contentType='application/json'){const t=await constructionWriteToken();const headers={Authorization:'Bearer '+t,'Content-Type':contentType};if(etag)headers['If-Match']=etag;else headers['If-None-Match']='*';const response=await fetch('https://graph.microsoft.com/v1.0'+path,{method:'PUT',headers,body});if(!response.ok)throw Error(response.status===412||response.status===409?'Outra sessão alterou os dados. Rascunho preservado; consulte o conflito antes de salvar.':'Gravação OneDrive HTTP '+response.status);return response.json()}
+async function constructionFolder(){const r=await graph('/me/drive/root:/'+graphPath(CONSTRUCTION_FOLDER),{silent:true});return r.json()}
+async function constructionSave(s,base){const remote=await constructionRead();const merged=ConstructionMigration.merge(s,remote.data,base||remote.data);if(merged.conflicts.length)throw Error('Conflito nos campos: '+merged.conflicts.slice(0,4).join(', ')+'. Nenhuma alteração foi sobrescrita.');merged.state.meta.attachmentHistory=[...new Map([...(merged.state.meta.attachmentHistory||[]),...(remote.data.items.documentos||[]),...(remote.data.meta.contractInfo?.docs||[]).map(x=>({nome:x[0],url:x[2]}))].map(x=>[JSON.stringify(x),x])).values()];const verification=ConstructionMigration.verify(remote.data,merged.state);if(!verification.passed)throw Error('Preservação de registros falhou; gravação interrompida.');
+ const folder=await constructionFolder(),prefix='/me/drive/items/'+encodeURIComponent(folder.id)+':/';
+ const backupName='controle-construcao-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';
+ await authorizedWrite(prefix+backupName+':/content',JSON.stringify(remote.data));
+ const path=remote.canonical?remote.p+'/content':prefix+CONSTRUCTION_FILE+':/content';
+ await authorizedWrite(path,JSON.stringify(merged.state),remote.canonical?remote.etag:null);
+ const check=await constructionRead();if(!check.canonical||!ConstructionMigration.verify(merged.state,check.data).passed)throw Error('Verificação da cópia salva incompleta; backup preservado.');
+ if(JSON.stringify(check.data)!==JSON.stringify(merged.state))throw Error('Conteúdo salvo diverge do rascunho; cópias preservadas.');return check;
+}
+async function constructionUpload(file){const folder=await constructionFolder(),name='controle-construcao-anexo-'+crypto.randomUUID()+'-'+file.name.replace(/[\\/:*?"<>|]/g,'_');return authorizedWrite('/me/drive/items/'+encodeURIComponent(folder.id)+':/'+graphPath(name)+':/content',await file.arrayBuffer(),null,file.type||'application/octet-stream')}
+window.ConstructionHost={
+ balance:()=>ObraFinanceBridge.controlSnapshot?.()||null,seed:()=>projectState(),session:()=>readyAuth(),login:()=>login(),
+ open(section='resumo'){if(sectionKeys.has(section))constructionSection=section;tab='construction';document.body.classList.remove('menu-open');render()},
+ async readState(){return constructionRead()},async save(s,base){return constructionSave(s,base)},upload:constructionUpload,
+ async authorize(){await constructionWriteToken(true);toast('Gravação da construção autorizada.')},
+ graph(path,method='GET'){if(method!=='GET')throw Error('Gravação direta bloqueada. Use o arquivo privado integrado.');return graph(path,{silent:true}).then(r=>r.json())},
+ download:path=>graph(path,{silent:true}).then(r=>r.arrayBuffer()),
+ statePath:()=>constructionRemote?.p,
+ update(s){if(ConstructionMigration.valid(s))acceptConstruction(s)},section:()=>constructionSection
+};
+importConstruction=async function({silent=false}={}){const remote=await constructionRead(),local=canonicalLocal();const merged=local?ConstructionMigration.merge(local,remote.data):{state:remote.data,conflicts:[]};if(merged.conflicts.length)throw Error('Conflito de migração; cópias preservadas.');const seed=ConstructionMigration.local(localStorage,merged.state);acceptConstruction(seed);data.constructionStatus=remote.canonical?'Construção integrada':'Origem legada, leitura e rascunho local';data.constructionItemId=remote.item.id;data.constructionEtag=remote.etag;data.constructionImportedAt=new Date().toISOString();await dbSet('main',data);constructionFrame?.contentWindow?.ConstructionEmbedded?.receive(seed);if(!silent)render();return {changed:true}};
+const renderBeforeConstruction=render;
+render=function(){if(tab==='construction'){renderNav();$('pageTitle').textContent=TITLES.construction;$('view').innerHTML='<nav class="construction-sections" aria-label="Áreas da construção">'+sections.map(([k,v])=>'<button data-construction-section="'+k+'" class="'+(k===constructionSection?'active':'')+'">'+esc(v)+'</button>').join('')+'</nav>';$('view').querySelectorAll('[data-construction-section]').forEach(b=>b.onclick=()=>{constructionSection=b.dataset.constructionSection;localStorage.setItem('controle-construcao-secao',constructionSection);render()});if(!constructionFrame){constructionFrame=document.createElement('iframe');constructionFrame.title='Controle da construção';constructionFrame.className='construction-frame';constructionFrame.src='./construction/index.html?v=20261012-unify';$('view').after(constructionFrame)}constructionFrame.hidden=false;constructionFrame.contentWindow?.ConstructionEmbedded?.navigate(constructionSection)}else{if(constructionFrame)constructionFrame.hidden=true;renderBeforeConstruction()}};
+const unifiedSettings=settingsView;settingsView=function(){return unifiedSettings()+'<article class="card"><h2>Construção: gravação privada</h2><p>A base original e as planilhas não são sobrescritas. Alterações são gravadas em um novo arquivo privado com backup e controle de conflito. Premissas anteriores deste aplicativo permanecem guardadas, mas o cenário integrado é a única autoridade.</p><button id="authorizeConstruction">Autorizar gravação no OneDrive</button><button onclick="ConstructionHost.open(\'config\')">Configurações da construção</button></article>'};
+const unifiedAttach=attach;attach=function(){unifiedAttach();$('authorizeConstruction')?.addEventListener('click',()=>ConstructionHost.authorize().catch(e=>toast(e.message)))};
+addEventListener('storage',e=>{if(e.key===ConstructionMigration.STORAGE){const s=canonicalLocal();if(s)acceptConstruction(s)}});
+const unifiedAdopt=adoptLocalConstruction;adoptLocalConstruction=async function(){return canonicalLocal()?false:unifiedAdopt()};
+const loginBeforeUnified=login;login=async function(){await loginBeforeUnified();if(user)await importOneDriveWorkbook()};
+const initBeforeUnified=init;init=async function(){await initBeforeUnified();if(user)await importOneDriveWorkbook()};
+const route=new URL(location.href).searchParams;if(route.get('area')==='construction'){tab='construction';if(sectionKeys.has(route.get('section')))constructionSection=route.get('section')}

@@ -1,0 +1,3 @@
+.construction-sections{display:flex;gap:8px;overflow-x:auto;position:sticky;top:0;background:#0d1b2a;z-index:20;padding:8px 0}.construction-sections button{white-space:nowrap;flex-shrink:0}.construction-sections button.active{background:#69a5ff;color:#0b2036}.construction-frame{width:100%;height:calc(100dvh - 185px);min-height:350px;border:0;display:block}.construction-frame[hidden]{display:none}@media(max-width:700px){body.menu-open .construction-sections{z-index:1}.construction-frame{height:calc(100dvh - 190px)}}
+
+.construction-sections button{font:inherit;font-size:14px;border:1px solid #38526e;border-radius:10px;padding:10px 14px;background:#183149;color:#e6f0ff;cursor:pointer}.construction-sections button:hover{background:#294b6b}
