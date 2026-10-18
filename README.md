@@ -69,3 +69,9 @@ node --test tests/core.test.cjs tests/unification.test.cjs tests/construction-ho
 ```
 
 O GitHub Actions publica o conteúdo no GitHub Pages a cada atualização da branch `main`.
+
+## Configurações
+
+Sincronizações reúne sessão Microsoft, autorização da base privada, construção e diagnóstico de conflitos. Importações reúne novos relatórios, caminhos de origem, histórico e cópias recuperáveis; links antigos de importação continuam funcionando. A configuração do Client ID é avançada e não é repetida nos formulários de caminhos. A limpeza removeu apenas controles duplicados da interface, não registros ou backups.
+
+A inicialização Microsoft é compartilhada entre chamadas simultâneas, restaura a conta ativa/em cache e atualiza o indicador também nas telas Construção e Contracheques. A base privada é sincronizada ao entrar; documentos de origem não são importados automaticamente. Sem sessão autorizada, ou se a Microsoft exigir nova autenticação/permissão, a ação Entrar/Autorizar continua necessária.

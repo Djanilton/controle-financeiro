@@ -25,7 +25,7 @@
         await loadScript('./financial-model.js?v=20261018-balanced');
         await loadScript('./sac-engine.js?v=20261018-balanced');
         await loadScript('./sac-adapter.js?v=20261018-balanced');
-        await loadScript('./app.js?v=20261018-balanced');
+        await loadScript('./app.js?v=20261018-settings');
         await loadScript('./app-enhancements.js?v=20261018-balanced');
         await loadScript('./construction-finance.js?v=20261018-balanced');
         await loadScript('./integration-ui.js?v=20261018-balanced');
@@ -37,7 +37,8 @@
         await loadScript('./report-center.js?v=20261018-imports');
         await loadScript('./app-state.js?v=20261018-balanced');
         await loadScript('./app-refinement.js?v=20261018-reserve-view');
-        await loadScript('./interaction-state.js?v=20261018-balanced');
+        await loadScript('./settings-workspace.js?v=20261018-settings');
+        await loadScript('./interaction-state.js?v=20261018-settings');
       }
     });
   </script>
@@ -65,7 +66,6 @@
       </div>
       <div class="top-actions">
         <span id="accountBadge" class="account-badge">Microsoft desconectado</span>
-        <button class="primary" id="quickImport">Importar</button>
       </div>
     </header>
     <main id="view" tabindex="-1"></main>
