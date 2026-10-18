@@ -36,6 +36,10 @@ O resumo financeiro mensal fica em **Projeção reserva**; a formação da reser
 
 PDF.js 5.4.624 (compilação de compatibilidade) é distribuído em `vendor/` sob Apache 2.0, com licença incluída.
 
+A tela Importar reúne as ações em um único quadro, incluindo seleção local e opções recolhidas de carga inicial/recuperação. A pasta de transações usa um caminho completo, sem escolher arbitrariamente entre pastas chamadas Extratos. Os leitores aceitam FGTS com ou sem símbolos monetários e CNIS com remunerações em várias colunas ou grade anual girada; a posição dos meses vazios é preservada. Falhas de leitura não substituem os dados válidos anteriores.
+
+A remuneração COSERN ausente no quadro INSS é completada pelo salário básico dos contracheques armazenados, sem somar férias, benefícios ou alterar o saldo previdenciário. Valores históricos preenchidos são preservados. A tabela de renda fixa alterna entre instituição e total mensal das aplicações selecionadas; percentuais são ponderados pelo saldo inicial, não somados, e a escolha permanece salva no dispositivo.
+
 ## OneDrive
 
 Em **Configurações**, informe o Client ID do aplicativo Microsoft e mantenha ou ajuste os caminhos privados. No cadastro Microsoft Entra, inclua como URI de redirecionamento do tipo SPA:
