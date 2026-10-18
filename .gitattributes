@@ -1,0 +1,2 @@
+# Keep the official generated PDF.js distribution unchanged.
+vendor/pdf*.mjs -whitespace

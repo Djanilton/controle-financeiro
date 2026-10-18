@@ -22,6 +22,16 @@ O repositório contém somente o aplicativo. Planilhas, relatórios e lançament
 - migração preservada de documentos, anexos, formulários, IDs e campos privados do Minha Obra;
 - instalação como aplicativo (PWA).
 
+## Contracheques e importação dos relatórios
+
+A área **Contracheques** lê as abas anuais da planilha histórica, calcula os totais pelas rubricas e apresenta resumo mensal, anual, matriz por rubrica e gráficos. PDFs de salário, férias, PLR e complementos são conferidos contra os totais impressos antes da importação. Documentos repetidos não se acumulam; no mês coberto pelos PDFs, o total dos documentos substitui o consolidado da planilha. Diferenças ficam expostas para conferência. Os contracheques não geram receitas bancárias adicionais.
+
+Em **Importar**, o botão **Importar todos os relatórios** verifica contracheques, despesas/receitas/transferências e extratos NEOS/FGTS/INSS. Os caminhos ficam em Configurações. O histórico anterior de contracheques vem da planilha e os PDFs do ano atual são examinados nas subpastas anuais. PDFs antigos também podem ser selecionados localmente. Os leitores aceitam PDFs com texto selecionável, Excel e CSV. Arquivos digitalizados sem texto exigem outra fonte.
+
+A verificação acontece ao entrar na Microsoft e a cada cinco minutos enquanto o aplicativo está aberto e visível, além do botão manual. Ela usa a conexão do próprio navegador e não executa tarefas do Codex. Metadados do OneDrive evitam baixar novamente arquivos inalterados. Os registros importados permanecem no armazenamento privado de cada navegador e podem ser reconstruídos dos mesmos arquivos do OneDrive em outro dispositivo. Nenhuma planilha ou PDF original é sobrescrito.
+
+PDF.js 5.4.624 (compilação de compatibilidade) é distribuído em `vendor/` sob Apache 2.0, com licença incluída.
+
 ## OneDrive
 
 Em **Configurações**, informe o Client ID do aplicativo Microsoft e mantenha ou ajuste os caminhos privados. No cadastro Microsoft Entra, inclua como URI de redirecionamento do tipo SPA:
