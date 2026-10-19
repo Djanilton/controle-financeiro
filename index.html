@@ -25,7 +25,7 @@
         await loadScript('./financial-model.js?v=20261019-patrimony-cdi');
         await loadScript('./sac-engine.js?v=20261019-patrimony-cdi');
         await loadScript('./sac-adapter.js?v=20261018-balanced');
-        await loadScript('./app.js?v=20261018-settings');
+        await loadScript('./app.js?v=20261019-sidebar');
         await loadScript('./app-enhancements.js?v=20261019-patrimony-cdi');
         await loadScript('./construction-finance.js?v=20261018-balanced');
         await loadScript('./integration-ui.js?v=20261019-patrimony-cdi');
@@ -40,6 +40,7 @@
         await loadScript('./reserve-details.js?v=20261019-contractor');
         await loadScript('./settings-workspace.js?v=20261018-settings');
         await loadScript('./transfer-repair.js?v=20261018-transfers');
+        await loadScript('./sidebar.js?v=20261019-sidebar');
         await loadScript('./interaction-state.js?v=20261018-settings');
       }
     });
@@ -47,10 +48,12 @@
 <link rel="stylesheet" href="enhancements.css?v=20261018-balanced">
 <link rel="stylesheet" href="construction.css?v=20261018-reserve-view">
 <link rel="stylesheet" href="reports.css?v=20261018-balanced">
+<link rel="stylesheet" href="sidebar.css?v=20261019-sidebar">
 </head>
 <body>
   <p class="auth-progress">Conectando à Microsoft…</p>
   <aside class="sidebar">
+    <button id="menuButton" class="sidebar-toggle" aria-label="Retrair menu" aria-controls="nav" aria-expanded="true">☰</button>
     <div class="brand">
       <div class="brand-mark">CF</div>
       <div><strong>Controle das Finanças</strong><small>Visão particular</small></div>
@@ -61,7 +64,6 @@
 
   <div class="shell">
     <header class="topbar">
-      <button id="menuButton" class="icon-button mobile-only" aria-label="Abrir menu">☰</button>
       <div>
         <p class="eyebrow">CONTROLE PESSOAL</p>
         <h1 id="pageTitle">Painel financeiro</h1>

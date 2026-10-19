@@ -1,0 +1,13 @@
+/* Persistent icon rail on every screen size; never an overlay drawer. */
+:root{--sidebar-width:248px}
+body.sidebar-compact{--sidebar-width:64px}
+.sidebar{width:var(--sidebar-width);transform:none!important;padding:12px 8px;box-shadow:none;overflow-y:auto;background:#091423}
+.sidebar .sidebar-toggle{display:grid;place-items:center;flex:none;width:44px;min-height:44px;margin:0 0 12px;padding:6px;border:1px solid var(--line);background:var(--panel);border-radius:10px;font-size:24px;color:var(--text)}
+.shell{margin-left:var(--sidebar-width);min-width:0}
+.sidebar nav{flex:1;min-height:0;overflow-y:auto;align-content:start}
+.nav-icon{flex:0 0 24px;font-size:20px;line-height:1.2}
+.nav-label{min-width:0}
+body.sidebar-compact .sidebar .brand,body.sidebar-compact .privacy-note,body.sidebar-compact .nav-label{display:none}
+body.sidebar-compact .nav-button{justify-content:center;gap:0;padding:10px 0;min-height:44px}
+.topbar>div:first-of-type{min-width:0;flex:1}
+@media(max-width:720px){.sidebar{width:var(--sidebar-width)}.shell{margin-left:var(--sidebar-width)}body:not(.sidebar-compact){--sidebar-width:min(248px,64vw)}.sidebar .brand{padding:0 4px 16px;gap:6px}.sidebar .brand-mark{flex:none}.sidebar .brand strong{font-size:12px}.sidebar .brand small{font-size:10px}.nav-button{padding:10px 7px;font-size:12px}.privacy-note{padding:8px;font-size:10px}.topbar{gap:8px}.topbar h1{overflow-wrap:anywhere}}
