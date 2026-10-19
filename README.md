@@ -75,3 +75,9 @@ O GitHub Actions publica o conteúdo no GitHub Pages a cada atualização da bra
 Sincronizações reúne sessão Microsoft, autorização da base privada, construção e diagnóstico de conflitos. Importações reúne novos relatórios, caminhos de origem, histórico e cópias recuperáveis; links antigos de importação continuam funcionando. A configuração do Client ID é avançada e não é repetida nos formulários de caminhos. A limpeza removeu apenas controles duplicados da interface, não registros ou backups.
 
 A inicialização Microsoft é compartilhada entre chamadas simultâneas, restaura a conta ativa/em cache e atualiza o indicador também nas telas Construção e Contracheques. A base privada é sincronizada ao entrar; documentos de origem não são importados automaticamente. Sem sessão autorizada, ou se a Microsoft exigir nova autenticação/permissão, a ação Entrar/Autorizar continua necessária.
+
+### Recuperação do mapeamento de transferências
+
+O importador aceita Origem/Destino e Conta Origem/Conta Destino. Bases antigas com contas ausentes são recuperadas a partir do relatório original, em leitura silenciosa e apenas enquanto existirem vínculos a corrigir. A recuperação exige correspondência única de data, tipo, valor e descrição, completa somente campos vazios e arquiva os registros anteriores. Não altera valores, IDs, anotações ou documentos de origem. Falhas de acesso preservam a base e são informadas; não há ajuste de saldo fixado no código.
+
+As aplicações no mês atual usam movimentos até a data de hoje, excluindo receitas com vencimento posterior. O mês atual do Balanço Patrimonial e o saldo compartilhado com a obra usam o mesmo corte. Saldo líquido da Obra mostra PLR consolidada, FGTS aplicado à amortização e a parcela/saldo devedor do mesmo cenário da aba Empréstimos. FGTS destinado à dívida não entra novamente na reserva bancária.
