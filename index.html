@@ -23,7 +23,7 @@
       }else{
         await Promise.all([loadScript('./vendor/msal-browser.min.js'),loadScript('./vendor/xlsx.full.min.js')]);
         await loadScript('./app-core.js?v=20261018-transfers');
-        await loadScript('./financial-model.js?v=20261021-indexed');
+        await loadScript('./financial-model.js?v=20261021-no-card-marker');
         await loadScript('./transaction-entry.js?v=20261021-entry');
         await loadScript('./sac-engine.js?v=20261019-fgts-balance');
         await loadScript('./sac-adapter.js?v=20261018-balanced');
