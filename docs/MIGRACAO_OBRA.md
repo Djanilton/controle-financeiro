@@ -1,5 +1,7 @@
 # Projeções e vínculos privados
 
+> Registro histórico da primeira integração. Para a arquitetura atual, acessos recuperados, sessão única, arquivos canônicos e limites de validação, consulte [Auditoria da unificação — 20/10/2026](AUDITORIA_UNIFICACAO.md). A construção agora é editada e sincronizada no Controle Financeiro; o Minha Obra é acesso de transição.
+
 O Controle Financeiro usa o mesmo motor atual do Minha Obra. O cronograma, as despesas próprias, as exclusões, os pagamentos e os aportes programados são importados do arquivo privado `dados-completos.json` no OneDrive. No mesmo navegador, o cache privado do Minha Obra também pode inicializar o vínculo. Nenhum registro ou planilha é enviado ao GitHub.
 
 As duas projeções ficam em Empréstimos e Projeção reserva. O Minha Obra conserva premissas da construção, cronograma, gastos, contrato e dados privados; a retirada das abas de projeção não apaga entradas.

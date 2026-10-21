@@ -16,7 +16,7 @@ function project({transactions,initial=[],tables={},positions=[],result,asOfDate
  const stages=new Map();let paidOwn=Math.max(0,result.funding?.constructorAlreadyPaid||0);
  for(const stage of result.schedule||[]){const covered=Math.min(paidOwn,Math.max(0,stage.own||0));paidOwn-=covered;const own=Math.max(0,(stage.own||0)-covered);if(stage.month<anchor&&!own)continue;const m=stage.month<anchor?anchor:stage.month,row=stages.get(m)||{own:0,fgts:0,caixa:0,covered:0};row.own+=own;row.covered+=covered;if(stage.month>=anchor){row.fgts+=stage.fgts||0;row.caixa+=stage.caixa||0}stages.set(m,row)}
  let pending=0,fgtsUsed=0,serial=0;
- const positionIndex=new Map(positions.map(x=>[x.institution+'|'+x.month,x]));
+ const positionIndex=new Map(positions.map(x=>[x.institution+'|'+x.month,x])),fgtsSource=result.funding?.sourceSnapshot?.fgtsProjection;
  for(const m of M.months(anchor,to)){
   const s=sac.get(m),r=cash.get(m),stage={...(stages.get(m)||{own:0,fgts:0,caixa:0,covered:0})},flow={month:m,caixa:0,fgts:0,sofisa:0,itau:0,contractor:0,installment:0,uncovered:0,earnings:{},remainingSalary:Math.max(0,r?.salaryLimit??r?.F??0)},day=m===anchor?asOfDate:m+'-01';
   const emit=(kind,account,value,description,destination='',paid=value)=>{if(value<=.0000001)return;canonical.push({id:'projection-patrimony-'+(++serial),kind,account,destination,description,date:day,dueDate:day,amount:value,cashAmount:paid,considerExpense:kind==='Despesa'?'Sim':'',projection:true});};
@@ -34,10 +34,11 @@ function project({transactions,initial=[],tables={},positions=[],result,asOfDate
   let alreadyPaid=Math.max(0,actualContractor-stage.covered);for(const source of ['own','fgts','caixa']){const used=Math.min(alreadyPaid,stage[source]);stage[source]-=used;alreadyPaid-=used}
   flow.caixa=Math.max(0,(s?.release||0)-actualRelease);credit('Itaú',flow.caixa,'Medição Caixa — cronograma do financiamento');
   flow.fgtsBefore=fgtsUsed;
-  const fgtsBalance=Math.max(0,(positionIndex.get('FGTS|'+m)?.closing||0)-fgtsUsed),fgtsInitial=Math.min(stage.fgts,fgtsBalance),fgtsDebt=Math.min(events.get(m)?.fgts||0,Math.max(0,fgtsBalance-fgtsInitial));
+  const requestedFgts=events.get(m)?.fgtsPending??events.get(m)?.fgts??0,fgtsBase=fgtsSource?fgtsSource.balances[m]:positionIndex.get('FGTS|'+m)?.closing;
+  const fgtsBalance=Math.max(0,(fgtsBase||0)-fgtsUsed),fgtsInitial=Math.min(stage.fgts,fgtsBalance),fgtsDebt=Math.min(requestedFgts,Math.max(0,fgtsBalance-fgtsInitial));
   if(fgtsInitial){balance.Itaú+=fgtsInitial;emit('Transferência','FGTS',fgtsInitial,'FGTS inicial para construtora','Itaú')}flow.fgts=fgtsInitial;fgtsUsed+=fgtsInitial+fgtsDebt;
   if(fgtsDebt)emit('Despesa','FGTS',fgtsDebt,'Amortização do financiamento com FGTS');
-  flow.uncovered+=Math.max(0,(events.get(m)?.fgts||0)-fgtsDebt);
+  flow.uncovered+=Math.max(0,requestedFgts-fgtsDebt);
   const contractorTotal=stage.own+stage.fgts+stage.caixa;flow.contractor=contractorTotal+actualContractor;
   // Credits received for the stage fund its FGTS/Caixa portion; only own money is rescued.
   resgate(stage.own);expense('Itaú',contractorTotal,'Pagamento construtora — cronograma');
@@ -49,7 +50,7 @@ function project({transactions,initial=[],tables={},positions=[],result,asOfDate
  }
  const balances=C.balanceRows(canonical,initial,{from:anchor,to}),index=new Map(balances.map(x=>[C.normalize(x.account)+'|'+x.month,x])),flowIndex=new Map(flows.map(x=>[x.month,x]));
  for(const flow of flows)for(const name of banks){const closing=index.get(C.normalize(name)+'|'+flow.month)?.closing??0;if(Math.abs(closing-flow.bankClosing[name])>.005)throw Error('Movimentos e saldo não reconciliados: '+name+' em '+flow.month)}
- const investments=positions.map(p=>{if(p.month<anchor)return p;const f=flowIndex.get(p.month);if(!f)return p;if(p.institution==='FGTS')return {...p,opening:p.opening==null?null:p.opening-f.fgtsBefore,closing:p.closing==null?null:Math.max(0,p.closing-f.fgtsUsed)};const name=p.institution==='Itaú'?'Investimento Itaú':p.institution==='Sofisa'?'Sofisa':null;if(!name)return p;const row=index.get(C.normalize(name)+'|'+p.month);return row?{...p,...row,institution:p.institution,earnings:row.income,phase:'Projeção bancária vinculada à obra'}:p});
+ const investments=positions.map(p=>{if(p.month<anchor)return p;const f=flowIndex.get(p.month);if(!f)return p;if(p.institution==='FGTS'){const d=new Date(p.month+'-01T00:00:00Z');d.setUTCMonth(d.getUTCMonth()-1);const opening=fgtsSource?.balances[d.toISOString().slice(0,7)]??p.opening,closing=fgtsSource?fgtsSource.balances[p.month]:p.closing;return {...p,opening:opening==null?null:opening-f.fgtsBefore,closing:closing==null?null:Math.max(0,closing-f.fgtsUsed)}}const name=p.institution==='Itaú'?'Investimento Itaú':p.institution==='Sofisa'?'Sofisa':null;if(!name)return p;const row=index.get(C.normalize(name)+'|'+p.month);return row?{...p,...row,institution:p.institution,earnings:row.income,phase:'Projeção bancária vinculada à obra'}:p});
  const loans=result.sac.map(s=>({month:s.A,closing:s.M,installment:s.L}));
  const rows=M.summaryRows(canonical,initial,tables,investments,loans,anchor,to),expenseTotals=new Map();for(const t of canonical)if(t.kind==='Despesa'&&C.normalize(t.considerExpense)!=='nao')expenseTotals.set(month(t),(expenseTotals.get(month(t))||0)+(Number(t.amount)||0));
  for(const row of rows){const f=flowIndex.get(row['Mês']);row.Despesas=-(expenseTotals.get(row['Mês'])||0);row['Medições Caixa creditadas no Itaú']=f.caixa;row['Resgate Sofisa para Itaú']=f.sofisa;row['Resgate Investimento Itaú para Itaú']=f.itau;row['Pagamento construtora']=f.contractor;row['Parcela do financiamento']=f.installment+f.actualLoan;row['Despesas sem cobertura no mês']=f.uncovered;row['Obrigações sem cobertura acumuladas']=-f.pending;row.Total-=f.pending;row.Passivo-=f.pending;}

@@ -50,6 +50,7 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
  funding.asOfDate=asOfDate||null;funding.bankInitialReserve=banks?{...banks}:null;
  const expenseTimeline=[];
  const sac=[],cash=[],allocation=[];let debt=constructionMonths?0:c.principal,reserve=p.K6,uncovered=funding.initialShortfall;
+ const fgtsSource=c.fgtsProjection,fgtsFrom=fgtsSource?.asOfDate?.slice(0,7);let fgtsInitialUsed=0,fgtsAmortizationUsed=0;
  for(let i=0;i<c.dates.length;i++){
   const m=i+1,date=month(c.dates[i]),year=Number(date.slice(0,4)),mo=Number(date.slice(5,7));
   const annual=c.cdi.find(x=>x.year===year)?.annual;if(annual===undefined)throw Error('CDI não informado para '+year);
@@ -62,7 +63,10 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   const interest=debt<=0?0:debt*(1+tr)*p.H7,amortization=debt<=0||inConstruction?0:correctedDebt/(c.term-m+1);
   if(!Number.isFinite(amortization)||amortization<0)throw Error('Saldo remanescente após o prazo');
   const mip=debt<=0?0:correctedDebt*previous(c.mipBands,m).rate,insurance=i===0?c.insurance:debt<=0?0:correctedDebt*c.insurance/c.principal;
-  const fgts=!inConstruction&&debt>0&&m%24===0?c.biennialFgts*(1+sum([...sac.slice(Math.max(0,i-11)).map(x=>x.D),tr])):0;
+  const fgtsPaid=fgtsSource?Math.max(0,Number(fgtsSource.paid?.[date]||0)):0;
+  if(fgtsSource&&date>=fgtsFrom)fgtsInitialUsed+=Math.max(0,sum(c.schedule.filter(x=>month(x.month)===date).map(x=>Number(x.fgts)||0))-Number(fgtsSource.initialPaid?.[date]||0));
+  const fgtsAvailable=fgtsSource&&date>=fgtsFrom&&Number.isFinite(fgtsSource.balances?.[date])?Math.max(0,fgtsSource.balances[date]-fgtsInitialUsed-fgtsAmortizationUsed):null;
+  const fgts=fgtsPaid>0?fgtsPaid:!inConstruction&&debt>0&&m%24===0?(fgtsSource?(date>=fgtsFrom?(fgtsAvailable??0):0):c.biennialFgts*(1+sum([...sac.slice(Math.max(0,i-11)).map(x=>x.D),tr]))):0;
   const mixed=c.strategy==='Misto',plrEvent=mo===4,plrDebt=!inConstruction&&debt>0&&!(mixed&&bankMode&&date===anchorMonth&&c.skipCurrentUndatedInflows)&&(mixed?plrEvent:c.strategy==='Finan'&&m%12===0)?c.plr*(mixed?c.plrDebtShare:1):0;
   for(const x of programs)if(!Number.isFinite(x.valor)||x.valor<0||!Number.isInteger(x.inicio)||!Number.isInteger(x.fim)||x.inicio<1||x.fim<x.inicio)throw Error('Programação de aporte inválida');
   const scheduled=programs.filter(x=>m>=x.inicio&&m<=x.fim);
@@ -104,9 +108,11 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   const contractorPayment=sum(c.schedule.filter(x=>month(x.month)===date).map(x=>x.payment));
   const ownPayment=(i===0?(currentFunds?otherUpfront:extras-deferred):0)+deferredPayment;
   const appliedFgts=Math.min(fgts,extra);
+  const fgtsPending=fgtsSource?Math.max(0,appliedFgts-fgtsPaid):appliedFgts;
+  if(fgtsSource&&date>=fgtsFrom)fgtsAmortizationUsed+=fgtsPending;
   const ownContributions=appliedSalary+plrCash+extraProgram+autoCash+Math.max(0,extra-appliedFgts);
   const financingFlow=installment+appliedFgts,ownFlow=ownPayment+ownContributions;
-  expenseTimeline.push({month:date,financing:financingFlow,contractor:contractorPayment,own:ownFlow,total:financingFlow+contractorPayment+ownFlow,furniture:deferredPayment,salary:appliedSalary,plr:plrCash+Math.min(plrDebt,Math.max(0,extra-appliedFgts)),fgts:appliedFgts,ownExpenses:ownPayment,ownContributions});
+  expenseTimeline.push({month:date,financing:financingFlow,contractor:contractorPayment,own:ownFlow,total:financingFlow+contractorPayment+ownFlow,furniture:deferredPayment,salary:appliedSalary,plr:plrCash+Math.min(plrDebt,Math.max(0,extra-appliedFgts)),fgts:appliedFgts,fgtsPaid:Math.min(appliedFgts,fgtsPaid),fgtsPending,fgtsAvailableBefore:fgtsAvailable===null?null:fgtsAvailable+Math.min(appliedFgts,fgtsPaid),fgtsRemaining:fgtsAvailable===null?null:Math.max(0,fgtsAvailable-fgtsPending),ownExpenses:ownPayment,ownContributions});
   const rawReserve=reserve+earnings+appliedSalary+plrCash+extraProgram+autoCash+manualIn-installment+paidCurrent-manualOut-deferredPayment,unfunded=currentFunds?Math.max(0,-rawReserve):0,finalReserve=currentFunds?Math.max(0,rawReserve):rawReserve;
   const paymentFromInvestment=Math.min(outstandingInstallment,Math.max(0,availableInvestment)),paymentFromSalary=Math.min(Math.max(0,outstandingInstallment-paymentFromInvestment),appliedSalary);
   if(currentFunds&&c.projectionStart&&date<c.projectionStart){cash.push({A:date,B:m,C:reserve,D:net,E:0,F:0,G:0,H:installment,I:reserve,J:factor,manualIn:0,manualOut:0,deferredPayment:0,unfunded:0,projectedBalance:reserve-uncovered,paymentFromInvestment:0,paymentFromSalary:0,historical:true});debt=closing;continue}
