@@ -7,7 +7,7 @@ function patrimonySummary(from,to,model){
  const historical=Model.summaryRows(transactions,initial,tables,model.investments,model.loans,from,to);
  if(!result?.funding?.sourceSnapshot||to<anchor)return historical;
  try{
-  if(patrimonyCache?.model!==model||patrimonyCache?.result!==result||patrimonyCache?.to!==to)patrimonyCache={model,result,to,projection:PatrimonyModel.project({transactions,initial,tables,positions:model.investments,result,asOfDate:today,to})};
+  if(patrimonyCache?.model!==model||patrimonyCache?.result!==result||patrimonyCache?.to!==to)patrimonyCache={model,result,to,projection:PatrimonyModel.project({transactions,initial,tables,positions:model.investments,loanPositions:model.loans,result,asOfDate:today,to})};
   const projected=new Map(patrimonyCache.projection.rows.map(row=>[row['Mês'],row]));
   return historical.map(row=>({...projected.get(row['Mês'])||row}));
  }catch(error){patrimonyError='Projeção indisponível: '+error.message;return historical.map(row=>row['Mês']<anchor?row:{...row,Itaú:null,Sofisa:null,'Investimento Itaú':null,Ativos:null,Total:null,'Saldos não informados':patrimonyError})}

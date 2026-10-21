@@ -4,7 +4,7 @@
 'use strict';
 const C=root.FinanceCore||(typeof require==='function'?require('./app-core.js'):null),M=root.FinancialModel||(typeof require==='function'?require('./financial-model.js'):null);
 const banks=['Sofisa','Investimento Itaú','Itaú'],date=t=>t.dueDate||t.date||'',amount=t=>Number(t.cashAmount??t.amount)||0,month=t=>date(t).slice(0,7),key=a=>banks.find(n=>C.normalize(n)===C.normalize(a));
-function project({transactions,initial=[],tables={},positions=[],result,asOfDate,to}){
+function project({transactions,initial=[],tables={},positions=[],loanPositions=null,result,asOfDate,to}){
  const anchor=asOfDate.slice(0,7),actual=transactions.filter(t=>date(t)<=asOfDate),linked=new Set(M.financingTransactions(transactions)),cash=new Map(result.cash.map(x=>[x.A,x])),sac=new Map(result.sac.map(x=>[x.A,x])),events=new Map((result.expenseTimeline||[]).map(x=>[x.month,x]));
  const financingIncome=t=>t.kind==='Receita'&&/financiamento.*(?:caixa|casa)|caixa.*(?:medicao|liberacao)/.test(C.normalize(t.description));
  const contractor=t=>t.kind==='Despesa'&&/construtora|construcao casa nova/.test(C.normalize(t.description));
@@ -51,9 +51,11 @@ function project({transactions,initial=[],tables={},positions=[],result,asOfDate
  const balances=C.balanceRows(canonical,initial,{from:anchor,to}),index=new Map(balances.map(x=>[C.normalize(x.account)+'|'+x.month,x])),flowIndex=new Map(flows.map(x=>[x.month,x]));
  for(const flow of flows)for(const name of banks){const closing=index.get(C.normalize(name)+'|'+flow.month)?.closing??0;if(Math.abs(closing-flow.bankClosing[name])>.005)throw Error('Movimentos e saldo não reconciliados: '+name+' em '+flow.month)}
  const investments=positions.map(p=>{if(p.month<anchor)return p;const f=flowIndex.get(p.month);if(!f)return p;if(p.institution==='FGTS'){const d=new Date(p.month+'-01T00:00:00Z');d.setUTCMonth(d.getUTCMonth()-1);const opening=fgtsSource?.balances[d.toISOString().slice(0,7)]??p.opening,closing=fgtsSource?fgtsSource.balances[p.month]:p.closing;return {...p,opening:opening==null?null:opening-f.fgtsBefore,closing:closing==null?null:Math.max(0,closing-f.fgtsUsed)}}const name=p.institution==='Itaú'?'Investimento Itaú':p.institution==='Sofisa'?'Sofisa':null;if(!name)return p;const row=index.get(C.normalize(name)+'|'+p.month);return row?{...p,...row,institution:p.institution,earnings:row.income,phase:'Projeção bancária vinculada à obra'}:p});
- const loans=result.sac.map(s=>({month:s.A,closing:s.M,installment:s.L}));
+ const releasedLoans=result.sac.map(s=>({month:s.A,opening:s.C,closing:s.M,installment:s.L,phase:s.phase,release:s.release}));
+ // Same contracted-debt presentation already used in Empréstimos. No second SAC.
+ const loans=loanPositions||(Number.isFinite(result.parameters?.H3)?M.presentLoanRows(releasedLoans,{principal:result.parameters.H3},transactions,anchor):releasedLoans);
  const rows=M.summaryRows(canonical,initial,tables,investments,loans,anchor,to),expenseTotals=new Map();for(const t of canonical)if(t.kind==='Despesa'&&C.normalize(t.considerExpense)!=='nao')expenseTotals.set(month(t),(expenseTotals.get(month(t))||0)+(Number(t.amount)||0));
- for(const row of rows){const f=flowIndex.get(row['Mês']);row.Despesas=-(expenseTotals.get(row['Mês'])||0);row['Medições Caixa creditadas no Itaú']=f.caixa;row['Resgate Sofisa para Itaú']=f.sofisa;row['Resgate Investimento Itaú para Itaú']=f.itau;row['Pagamento construtora']=f.contractor;row['Parcela do financiamento']=f.installment+f.actualLoan;row['Despesas sem cobertura no mês']=f.uncovered;row['Obrigações sem cobertura acumuladas']=-f.pending;row.Total-=f.pending;row.Passivo-=f.pending;}
+ for(const row of rows){const f=flowIndex.get(row['Mês']);row.Despesas=-(expenseTotals.get(row['Mês'])||0);row['Medições Caixa creditadas no Itaú']=f.caixa;row['Resgate Sofisa para Itaú']=f.sofisa;row['Resgate Investimento Itaú para Itaú']=f.itau;row['Pagamento construtora']=f.contractor;row['Parcela do financiamento']=f.installment+f.actualLoan;row['Móveis e eletros']=cash.get(row['Mês'])?.deferredPayment||0;row['Despesas sem cobertura no mês']=f.uncovered;row['Obrigações sem cobertura acumuladas']=-f.pending;row.Total-=f.pending;row.Passivo-=f.pending;}
  return {rows,investments,transactions:canonical,flows};
 }
 root.PatrimonyModel={project};if(typeof module!=='undefined')module.exports=root.PatrimonyModel;
