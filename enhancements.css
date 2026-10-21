@@ -6,3 +6,9 @@
 .chart-tooltip{position:fixed;z-index:150;max-width:calc(100vw - 20px);padding:9px 12px;border:1px solid #597493;border-radius:9px;background:#102740;color:#fff;box-shadow:0 5px 20px #0007;font-size:13px;pointer-events:none}.chart-tooltip[hidden]{display:none}
 .table-wrap.freeze-month th:first-child,.table-wrap.freeze-month td:first-child{position:sticky;left:0;z-index:3;background:#14283f;box-shadow:2px 0 0 #38516d}
 .table-wrap.freeze-month th:first-child{z-index:4;background:#1c3552}
+.matrix-table{--frozen-account:160px;--frozen-info:150px}
+.matrix-table th:first-child,.matrix-table td:first-child{width:var(--frozen-account);min-width:var(--frozen-account);max-width:var(--frozen-account);white-space:normal}
+.matrix-table th:nth-child(2),.matrix-table td:nth-child(2){left:var(--frozen-account);width:var(--frozen-info);min-width:var(--frozen-info);box-shadow:2px 0 #38516d}
+.matrix-table thead th:first-child,.matrix-table thead th:nth-child(2){top:0;z-index:8;background:#1c3552}
+@media(max-width:720px){.matrix-table{--frozen-account:110px;--frozen-info:120px}}
+.form-grid [hidden]{display:none!important}

@@ -2,16 +2,17 @@
 'use strict';
 const Core=window.FinanceCore;
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const shortDate=v=>v?new Date(v+'T12:00:00').toLocaleDateString('pt-BR'):'—';
-const monthName=v=>v?new Date(v.slice(0,7)+'-02T12:00:00').toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}):'—';
+const currencyFormatter=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}),dateFormatter=new Intl.DateTimeFormat('pt-BR'),monthFormatter=new Intl.DateTimeFormat('pt-BR',{month:'short',year:'2-digit'});
+const money=v=>currencyFormatter.format(Number(v||0));
+const shortDate=v=>v?dateFormatter.format(new Date(v+'T12:00:00')):'—';
+const monthName=v=>v?monthFormatter.format(new Date(v.slice(0,7)+'-02T12:00:00')):'—';
 const uid=()=>crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`;
 const STORAGE='controle-financeiro-preferencias-v1',MANUAL='controle-financeiro-lancamentos-v1';
 const MICROSOFT_CLIENT_ID='6735d0d9-9d62-44b7-b0f5-493359feabff';
 const NAV=[['dashboard','⌂','Painel'],['transactions','⌕','Transações'],['expenses','▤','Despesas'],['balances','◇','Resumo saldo diário'],['investments','↗','Investimentos'],['loans','◫','Empréstimos'],['import','⇩','Importar'],['settings','⚙','Configurações']];
 const TITLES={dashboard:'Painel financeiro',expenses:'Análise de despesas',transactions:'Pesquisa de transações',balances:'Resumo saldo diário',investments:'Investimentos',loans:'Empréstimos',import:'Importar relatórios',settings:'Configurações'};
-const today=new Date().toISOString().slice(0,10),yearStart=today.slice(0,4)+'-01-01';
-const blankFilters=()=>({query:'',kind:'',account:'',category:'',subcategory:'',card:'',expenseType:'',considerExpense:'',from:'',to:''});
+const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Fortaleza'}).format(new Date()),yearStart=today.slice(0,4)+'-01-01';
+const blankFilters=()=>({query:'',kind:'',account:'',category:'',subcategory:'',card:'',expenseType:'',considerExpense:'',status:'',from:'',to:''});
 let tab='dashboard',page=0,editMode='',filters=blankFilters(),expenseFilters={...blankFilters(),kind:'Despesa',dateField:'due',from:yearStart,to:today},balanceFilters={account:'',type:'',from:yearStart.slice(0,7),to:today.slice(0,7)},investmentFilters={institution:'',phase:'',from:'2022-01',to:'2030-12'},loanFilters={institution:'',phase:'',from:'2022-01',to:'2030-12'},auth=null,user=null,authRedirectHandled=false;
 let data={transactions:[],netWorth:[],initialBalances:[],investments:[],loans:[],auxiliary:[],sources:[]};
 let manual=loadJson(MANUAL,{transactions:[],investments:[],loans:[]});
@@ -117,5 +118,5 @@ async function importOneDriveReports(){try{toast('Procurando os relatórios mais
 function saveSettingsForm(e){e.preventDefault();const before=settings.clientId;settings={...settings,...formData(e.currentTarget)};saveSettings();if(before!==settings.clientId){auth=null;user=null;authRedirectHandled=false}render();toast('Configurações salvas neste navegador.')}
 async function clearLocalData(){if(!confirm('Apagar todos os dados importados e lançamentos manuais deste navegador?'))return;data={transactions:[],netWorth:[],initialBalances:[],investments:[],loans:[],auxiliary:[],sources:[]};manual={transactions:[],investments:[],loans:[]};saveManual();await dbSet('main',data);render();toast('Dados locais apagados.')}
 
-async function init(){try{const cached=await dbGet('main');if(cached)data={...data,...cached}}catch(e){toast(`Armazenamento local: ${e.message}`)}$('fileInput').onchange=e=>{importFiles([...e.target.files]).catch(err=>toast(`Importação: ${err.message}`));e.target.value=''};$('menuButton').onclick=toggleSidebar;try{if(settings.clientId)await readyAuth()}catch{}render();if(user&&!data.sources.length)await importOneDriveWorkbook()}
+async function init(){try{const cached=await dbGet('main');if(cached)data={...data,...cached}}catch(e){toast(`Armazenamento local: ${e.message}`)}$('fileInput').onchange=e=>{importFiles([...e.target.files]).catch(err=>toast(`Importação: ${err.message}`));e.target.value=''};$('menuButton').onclick=toggleSidebar;render();try{if(settings.clientId)await readyAuth()}catch{}if(user)render();if(user&&!data.sources.length)await importOneDriveWorkbook()}
 // A inicialização acontece após o carregamento dos cálculos e controles.

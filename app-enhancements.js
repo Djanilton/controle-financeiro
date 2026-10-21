@@ -3,7 +3,7 @@ const Model=window.FinancialModel;
 NAV.splice(6,0,['summary','▦','Resumo']);TITLES.summary='Resumo financeiro';
 let summaryFilters={from:'2022-01',to:'2030-12'},modelCache=null,transactionCache=null;
 const originalAllTransactions=allTransactions;
-allTransactions=function(){if(!transactionCache||transactionCache.base!==data.transactions||transactionCache.tables!==data.sourceTables)transactionCache={base:data.transactions,tables:data.sourceTables,rows:Model.enrich(originalAllTransactions(),data.sourceTables||{})};return transactionCache.rows};
+allTransactions=function(){if(!transactionCache||transactionCache.base!==data.transactions||transactionCache.manual!==manual.transactions||transactionCache.tables!==data.sourceTables)transactionCache={base:data.transactions,manual:manual.transactions,tables:data.sourceTables,rows:Model.enrich(typeof TransactionEntry==='undefined'?originalAllTransactions():TransactionEntry.expand(originalAllTransactions()).sort((a,b)=>(b.date||'').localeCompare(a.date||'')),data.sourceTables||{})};return transactionCache.rows};
 function invalidateModel(){modelCache=null;transactionCache=null}
 const baseSaveManual=saveManual;
 saveManual=function(){invalidateModel();return baseSaveManual()};

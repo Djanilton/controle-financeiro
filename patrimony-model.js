@@ -22,7 +22,9 @@ function project({transactions,initial=[],tables={},positions=[],loanPositions=n
   const emit=(kind,account,value,description,destination='',paid=value)=>{if(value<=.0000001)return;canonical.push({id:'projection-patrimony-'+(++serial),kind,account,destination,description,date:day,dueDate:day,amount:value,cashAmount:paid,considerExpense:kind==='Despesa'?'Sim':'',projection:true});};
   const credit=(account,value,description)=>{if(value<=0)return;balance[account]+=value;emit('Receita',account,value,description)};
   const resgate=need=>{let got=0;for(const [name,field]of [['Sofisa','sofisa'],['Investimento Itaú','itau']]){const value=Math.min(Math.max(0,need-got),Math.max(0,balance[name]));if(value){balance[name]-=value;balance.Itaú+=value;flow[field]+=value;got+=value;emit('Transferência',name,value,'Resgate para pagamentos previstos','Itaú')}}return got};
-  const expense=(account,value,description,{investmentFirst=false,salaryLimited=false}={})=>{value=Math.max(0,value);if(account==='Itaú'){if(investmentFirst){const got=resgate(value),salary=Math.min(Math.max(0,value-got),flow.remainingSalary,Math.max(0,balance.Itaú-got));if(salaryLimited){flow.remainingSalary-=salary;const payable=Math.min(value,got+salary);balance.Itaú-=payable;flow.uncovered+=value-payable;emit('Despesa',account,value,description,'',payable);return payable}}resgate(Math.max(0,value-balance.Itaú))}else if(['Sofisa','Investimento Itaú'].includes(account)&&balance[account]<value){const other=account==='Sofisa'?'Investimento Itaú':'Sofisa',v=Math.min(value-balance[account],Math.max(0,balance[other]));balance[other]-=v;balance[account]+=v;emit('Transferência',other,v,'Complemento entre aplicações',account)}const paid=Math.min(value,Math.max(0,balance[account]));balance[account]-=paid;flow.uncovered+=value-paid;emit('Despesa',account,value,description,'',paid);return paid};
+  // Bank balance already includes salary/other receipts. Spend it first, rescue only
+  // the shortage. The reserve's salary contribution cap is not a cap on owned cash.
+  const expense=(account,value,description)=>{value=Math.max(0,value);if(banks.includes(account))account='Itaú';if(account==='Itaú')resgate(Math.max(0,value-balance.Itaú));const paid=Math.min(value,Math.max(0,balance[account]||0));balance[account]=(balance[account]||0)-paid;flow.uncovered+=value-paid;emit('Despesa',account,value,description,'',paid);return paid};
   for(const [name,institution]of [['Sofisa','Sofisa'],['Investimento Itaú','Itaú']]){const p=positionIndex.get(institution+'|'+m),days=new Date(Number(m.slice(0,4)),Number(m.slice(5,7)),0).getDate(),fraction=m===anchor?(days-Number(asOfDate.slice(8,10)))/days:1,rate=p?.monthlyRate;if(!Number.isFinite(rate))throw Error('CDI não disponível para '+institution+' em '+m);const income=Math.max(0,balance[name])*(Math.pow(1+rate,fraction)-1);flow.earnings[name]=income;credit(name,income,'Rendimento calculado pelo CDI previsto')}
   const tx=byMonth.get(m)||[];
   for(const t of tx.filter(t=>t.kind==='Receita')){const account=key(t.account);if(account)balance[account]+=amount(t);canonical.push({...t})}
@@ -40,11 +42,11 @@ function project({transactions,initial=[],tables={},positions=[],loanPositions=n
   if(fgtsDebt)emit('Despesa','FGTS',fgtsDebt,'Amortização do financiamento com FGTS');
   flow.uncovered+=Math.max(0,requestedFgts-fgtsDebt);
   const contractorTotal=stage.own+stage.fgts+stage.caixa;flow.contractor=contractorTotal+actualContractor;
-  // Credits received for the stage fund its FGTS/Caixa portion; only own money is rescued.
-  resgate(stage.own);expense('Itaú',contractorTotal,'Pagamento construtora — cronograma');
-  flow.installment=Math.max(0,r?.H??s?.L??0);expense('Itaú',flow.installment,'Parcela do financiamento — motor SAC',{investmentFirst:true,salaryLimited:true});
+  // Stage credits and existing bank cash pay first; only the shortage is rescued.
+  expense('Itaú',contractorTotal,'Pagamento construtora — cronograma');
+  flow.installment=Math.max(0,r?.H??s?.L??0);expense('Itaú',flow.installment,'Parcela do financiamento — motor SAC');
   const extra=Math.max(0,(s?.K||0)-(events.get(m)?.fgts||0));expense('Itaú',extra,'Amortização extraordinária — motor SAC');
-  expense('Itaú',r?.deferredPayment||0,'Móveis e eletrodomésticos — parcela após obra',{investmentFirst:true});
+  expense('Itaú',r?.deferredPayment||0,'Móveis e eletrodomésticos — parcela após obra');
   for(const t of tx.filter(t=>t.kind==='Despesa')){const account=key(t.account);if(account){if(amount(t)<0){balance[account]-=amount(t);canonical.push({...t});continue}const before=canonical.length;expense(account,amount(t),t.description);const record=canonical.at(-1);if(canonical.length>before&&record.kind==='Despesa'){record.considerExpense=t.considerExpense??'Sim';record.category=t.category;record.originalId=t.id}}else canonical.push({...t})}
   pending+=flow.uncovered;flow.pending=pending;flow.fgtsUsed=fgtsUsed;flow.caixa+=actualRelease;flow.bankClosing={...balance};flows.push(flow);
  }

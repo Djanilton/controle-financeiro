@@ -1,0 +1,19 @@
+/* Local input validation and recurrence expansion; no remote writes or credentials. */
+(function(root){'use strict';
+function addMonths(date,offset){const [y,m,d]=date.split('-').map(Number),first=new Date(Date.UTC(y,m-1+offset,1)),last=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+1,0)).getUTCDate();return first.toISOString().slice(0,7)+'-'+String(Math.min(d,last)).padStart(2,'0')}
+function build(input,{id,today}){
+ const amount=Number(input.amount),recurrence=input.recurrence||'Variável',kind=input.kind,completed=input.status==='Efetivada',count=Number(input.installmentCount);
+ if(!['Despesa','Receita','Transferência'].includes(kind)||!['Variável','Fixa','Parcelada'].includes(recurrence))throw Error('Tipo ou recorrência inválidos.');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)||!Number.isFinite(Date.parse(input.dueDate))||new Date(input.dueDate+'T00:00:00Z').toISOString().slice(0,10)!==input.dueDate)throw Error('Informe um vencimento válido.');
+ if(!(amount>0)||Math.abs(amount*100-Math.round(amount*100))>.000001)throw Error('Valor por parcela deve ser positivo, com até duas casas decimais.');
+ if(!input.description?.trim()||input.description.trim().length>34)throw Error('Descrição deve ter de 1 a 34 caracteres para compatibilidade com o plugin.');
+ if(!input.account||kind==='Transferência'&&(!input.destination||input.destination===input.account))throw Error('Selecione contas de origem e destino diferentes.');
+ if(recurrence==='Parcelada'&&(!Number.isInteger(count)||count<2||count>120))throw Error('Quantidade de parcelas: de 2 a 120.');
+ if(recurrence!=='Variável'&&(completed||input.dueDate<today))throw Error('Séries precisam começar hoje ou no futuro e estar pendentes para envio pelo plugin.');
+ if(completed&&input.dueDate>today)throw Error('Não é possível efetivar um vencimento futuro.');
+ const row={id,kind,description:input.description.trim(),amount,cashAmount:amount,account:input.account,destination:kind==='Transferência'?input.destination:'',category:kind==='Transferência'?'':input.category||'',subcategory:kind==='Transferência'?'':input.subcategory||'',date:input.dueDate,dueDate:input.dueDate,postedDate:today,paymentDate:completed?input.dueDate:'',requestedEffectiveDate:input.dueDate,status:completed?'Efetivada':'Pendente',recurrence,expenseType:recurrence,considerExpense:kind==='Despesa'?'Sim':'',source:'Manual',externalSync:'Pendente de envio pelo chat',...(recurrence!=='Variável'?{recurringTemplate:true,installmentCount:recurrence==='Parcelada'?count:null}:{})};
+ return {row,intent:{schema:'minhas-financas-write-intent-v1',localId:id,kind,description:row.description,value:amount,amountMode:'per_installment',recurrence:recurrence==='Fixa'?'monthly':recurrence==='Parcelada'?'installments':'none',installmentCount:recurrence==='Parcelada'?count:null,account:row.account,destination:row.destination,category:row.category,subcategory:row.subcategory,dueDate:row.dueDate,postingDate:today,effectiveDate:completed?row.dueDate:null,completed,createdAt:today,status:'pending'}};
+}
+function expand(rows,to='2061-12') {const out=[],linked=new Set(rows.filter(x=>x.templateId).map(x=>x.templateId+'|'+(x.dueDate||x.date)));for(const row of rows){if(!row.recurringTemplate){out.push(row);continue}const start=row.dueDate||row.date,count=row.recurrence==='Parcelada'?row.installmentCount:1200;for(let i=0;i<count;i++){const date=addMonths(start,i);if(date.slice(0,7)>to)break;if(linked.has(row.id+'|'+date))continue;out.push({...row,id:row.id+':'+(i+1),templateId:row.id,date,dueDate:date,paymentDate:'',status:'Pendente',recurringTemplate:false,installmentNumber:i+1,installments:row.recurrence==='Parcelada'?(i+1)+'/'+count:'',externalSync:row.externalSync})}}return out}
+root.TransactionEntry={build,expand,addMonths};if(typeof module!=='undefined')module.exports=root.TransactionEntry;
+})(typeof globalThis!=='undefined'?globalThis:this);

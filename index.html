@@ -11,7 +11,9 @@
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
+    window.addEventListener('unhandledrejection',event=>{const view=document.getElementById('view');if(view&&!view.querySelector('article'))view.textContent='A abertura não foi concluída. Seus dados locais foram preservados. Recarregue a página. Detalhe: '+(event.reason?.message||'Erro de inicialização.');});
     window.addEventListener('DOMContentLoaded',async()=>{
+      try{
       const authResponse=window.opener&&/(?:[?#&])(?:code|error|error_description)=/i.test(window.location.href);
       if(authResponse){
         document.title='Conectando à Microsoft';
@@ -19,16 +21,16 @@
         await loadScript('./vendor/msal-redirect-bridge.min.js');
         await window.msalRedirectBridge.broadcastResponseToMainFrame();
       }else{
-        await loadScript('./vendor/msal-browser.min.js');
-        await loadScript('./vendor/xlsx.full.min.js');
+        await Promise.all([loadScript('./vendor/msal-browser.min.js'),loadScript('./vendor/xlsx.full.min.js')]);
         await loadScript('./app-core.js?v=20261018-transfers');
-        await loadScript('./financial-model.js?v=20261019-cashflow');
+        await loadScript('./financial-model.js?v=20261021-indexed');
+        await loadScript('./transaction-entry.js?v=20261021-entry');
         await loadScript('./sac-engine.js?v=20261019-fgts-balance');
         await loadScript('./sac-adapter.js?v=20261018-balanced');
-        await loadScript('./app.js?v=20261019-sidebar');
-        await loadScript('./app-enhancements.js?v=20261019-patrimony-cdi');
+        await loadScript('./app.js?v=20261021-entry');
+        await loadScript('./app-enhancements.js?v=20261021-entry');
         await loadScript('./construction-finance.js?v=20261018-balanced');
-        await loadScript('./integration-ui.js?v=20261019-patrimony-cdi');
+        await loadScript('./integration-ui.js?v=20261021-indexed');
         await loadScript('./finance-bridge.js?v=20261019-fgts-balance');
         await loadScript('./construction-migration.js?v=20261018-balanced');
         await loadScript('./construction-host.js?v=20261019-fgts-balance');
@@ -36,20 +38,22 @@
         await loadScript('./statement-core.js?v=20261018-imports');
         await loadScript('./report-center.js?v=20261018-imports');
         await loadScript('./app-state.js?v=20261018-balanced');
-        await loadScript('./patrimony-model.js?v=20261021-contracted');
-        await loadScript('./patrimony-ui.js?v=20261021-contracted');
+        await loadScript('./patrimony-model.js?v=20261021-cash-first');
+        await loadScript('./patrimony-ui.js?v=20261021-indexed');
         await loadScript('./app-refinement.js?v=20261021-contracted');
         await loadScript('./reserve-details.js?v=20261019-contractor');
         await loadScript('./settings-workspace.js?v=20261018-settings');
         await loadScript('./transfer-repair.js?v=20261018-transfers');
         await loadScript('./sidebar.js?v=20261019-sidebar');
         await loadScript('./minhas-financas-core.js?v=20261020-plugin');
-        await loadScript('./minhas-financas-ui.js?v=20261020-plugin');
+        await loadScript('./minhas-financas-ui.js?v=20261021-templates');
+        await loadScript('./transaction-workspace.js?v=20261021-entry');
         await loadScript('./interaction-state.js?v=20261018-settings');
       }
+      }catch(error){const view=document.getElementById('view');if(view)view.textContent='Não foi possível carregar o aplicativo. Seus dados locais não foram apagados. Recarregue a página. Detalhe: '+error.message;console.error(error)}
     });
   </script>
-<link rel="stylesheet" href="enhancements.css?v=20261018-balanced">
+<link rel="stylesheet" href="enhancements.css?v=20261021-sticky">
 <link rel="stylesheet" href="construction.css?v=20261018-reserve-view">
 <link rel="stylesheet" href="reports.css?v=20261018-balanced">
 <link rel="stylesheet" href="sidebar.css?v=20261019-sidebar">
@@ -76,7 +80,7 @@
         <span id="accountBadge" class="account-badge">Microsoft desconectado</span>
       </div>
     </header>
-    <main id="view" tabindex="-1"></main>
+    <main id="view" tabindex="-1"><p role="status">Carregando o aplicativo e a base deste dispositivo…</p></main>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
