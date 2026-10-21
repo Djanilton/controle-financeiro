@@ -1,5 +1,9 @@
 # Integração pelo plugin — 21/10/2026
 
+## Retirada do aplicativo antigo
+
+Após os testes e a publicação integrada, o GitHub Pages de `Djanilton/minha-obra-app` foi despublicado e o repositório arquivado em 21/10/2026. A API confirmou `archived: true` e `has_pages: false`. O histórico completo também foi preservado em um bundle local verificado. Não houve exclusão da pasta privada OneDrive, dos anexos, dos arquivos financeiros originais ou da cópia local do código. A retirada é recuperável; não foi uma exclusão irreversível do repositório.
+
 ## Operação
 
 O plugin é consultado no chat somente quando o usuário pedir. Não há consulta agendada ao plugin, nem token MCP embutido no site. As leituras oficiais geram um pacote privado `minhas-financas-relatorio-plugin.json`, na mesma pasta OneDrive da base do aplicativo. O nome histórico dessa pasta não implica dependência do aplicativo Minha Obra.
