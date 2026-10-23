@@ -1,0 +1,10 @@
+.account-year-pivot{--pivot-account-width:170px;--pivot-info-width:155px}
+.account-year-pivot .matrix-table thead tr:first-child{height:44px}
+.account-year-pivot .matrix-table thead tr:first-child th{padding-top:6px;padding-bottom:6px}
+.account-year-pivot .matrix-table thead tr:nth-child(2) th{top:44px;left:auto;z-index:5;background:#1c3552}
+.account-year-pivot .matrix-table thead tr:first-child th:nth-child(-n+2){z-index:8}
+.account-year-pivot .matrix-table tbody td:first-child,.account-year-pivot .matrix-table thead tr:first-child th:first-child{width:var(--pivot-account-width);min-width:var(--pivot-account-width);max-width:var(--pivot-account-width);box-sizing:border-box;left:0;overflow-wrap:anywhere}
+.account-year-pivot .matrix-table tbody td:nth-child(2),.account-year-pivot .matrix-table thead tr:first-child th:nth-child(2){width:var(--pivot-info-width);min-width:var(--pivot-info-width);max-width:var(--pivot-info-width);box-sizing:border-box;left:var(--pivot-account-width);white-space:normal;overflow-wrap:anywhere}
+.account-year-pivot .year-toggle{position:sticky;left:calc(var(--pivot-account-width) + var(--pivot-info-width) + 4px);padding:3px 5px;min-height:28px;background:transparent;border:1px solid transparent;color:inherit;font:inherit;cursor:pointer;scroll-margin-top:250px;scroll-margin-left:calc(var(--pivot-account-width) + var(--pivot-info-width) + 4px)}
+.account-year-pivot .year-toggle:hover,.account-year-pivot .year-toggle:focus-visible{border-color:var(--accent,#68a7ff);background:rgba(104,167,255,.12)}
+@media(max-width:720px){.account-year-pivot{--pivot-account-width:100px;--pivot-info-width:100px}}

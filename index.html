@@ -8,6 +8,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css?v=20261018-balanced">
+  <link rel="stylesheet" href="./month-pivot.css?v=20261022-years">
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
@@ -48,6 +49,7 @@
         await loadScript('./minhas-financas-core.js?v=20261022-source-report');
         await loadScript('./minhas-financas-ui.js?v=20261022-auth-plugin');
         await loadScript('./transaction-workspace.js?v=20261021-entry');
+        await loadScript('./month-pivot.js?v=20261022-years');
         await loadScript('./interaction-state.js?v=20261018-settings');
       }
       }catch(error){const view=document.getElementById('view');if(view)view.textContent='Não foi possível carregar o aplicativo. Seus dados locais não foram apagados. Recarregue a página. Detalhe: '+error.message;console.error(error)}
