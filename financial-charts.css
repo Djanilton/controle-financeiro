@@ -1,0 +1,11 @@
+.finance-chart-legend{display:flex;flex-wrap:wrap;gap:9px 18px;margin:12px 0;max-height:120px;overflow:auto;font-size:13px}
+.finance-chart-legend span{display:inline-flex;align-items:center;gap:7px;max-width:100%;overflow-wrap:anywhere}
+.finance-chart-scroll{width:100%;overflow-x:auto}
+.finance-chart-scroll>svg{display:block;width:100%;min-width:640px;height:290px}
+.finance-chart-scroll .chart-label{font-size:16px;fill:var(--muted,#9bb0c7)}
+.finance-chart-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+[data-finance-chart]{min-width:0;margin:18px 0}
+[data-finance-chart] h3{font-size:17px;margin:18px 0 8px}
+.finance-chart-pair>.card{margin:0}
+.chart-tooltip{white-space:pre-line;max-height:60vh;overflow:auto}
+@media(max-width:1050px){.finance-chart-pair{grid-template-columns:1fr}}
