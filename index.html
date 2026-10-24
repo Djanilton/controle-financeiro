@@ -52,7 +52,8 @@
         await loadScript('./transaction-workspace.js?v=20261021-entry');
         await loadScript('./month-pivot.js?v=20261022-years');
         await loadScript('./financial-charts.js?v=20261024-filtered');
-        await loadScript('./interaction-state.js?v=20261018-settings');
+        await loadScript('./month-inputs.js?v=20261024-focus');
+        await loadScript('./interaction-state.js?v=20261024-focus');
       }
       }catch(error){const view=document.getElementById('view');if(view)view.textContent='Não foi possível carregar o aplicativo. Seus dados locais não foram apagados. Recarregue a página. Detalhe: '+error.message;console.error(error)}
     });
