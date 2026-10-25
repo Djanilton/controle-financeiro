@@ -62,5 +62,15 @@ O **Controle Financeiro** é a aplicação principal. O antigo **Minha Obra** (`
 - Se faltar autorização, acesso a fontes privadas ou requisito crítico, explicar a limitação e executar apenas etapas seguras.
 - Não criar tarefas futuras nem prometer execução assíncrona sem ferramenta apropriada.
 
+## Acompanhamento consolidado obrigatório
+- Usar `docs/REQUISITOS_E_PENDENCIAS.md` como referência central de requisitos, progresso, dependências e pendências.
+- Ao finalizar qualquer implementação, correção, migração ou teste que altere o estado de uma funcionalidade, atualizar no documento os itens afetados, preservando as pendências anteriores ainda válidas.
+- Para cada atualização, registrar: status (**não verificado**, **em andamento**, **bloqueado**, **implementado**, **validado**), resumo do que mudou, arquivos relevantes, testes realmente executados e seus resultados, problemas restantes, commit/PR ou branch quando disponíveis.
+- Não marcar como validado um recurso apenas por existir código; registrar explicitamente limitações, validações manuais ou dependências externas (como permissões do plugin Minhas Finanças).
+- Incluir a alteração da documentação na mesma branch/PR da implementação, preferencialmente no mesmo commit lógico. Não criar commits nem publicar automaticamente sem autorização; respeitar a política de branch e deploy acima.
+- Se a implementação não for publicada ou o documento remoto não puder ser atualizado, informar claramente que o GitHub ainda não reflete o estado local e fornecer o resumo das alterações pendentes.
+- Quando a tarefa for somente consulta/análise, não modificar o arquivo sem necessidade; apresentar as divergências encontradas e propor a atualização.
+- Não registrar no documento dados financeiros privados, tokens, credenciais ou qualquer conteúdo sensível.
+
 ## Instruções do projeto do ChatGPT
 As instruções de um Projeto do ChatGPT e seu histórico não são necessariamente visíveis no Codex. O repositório e este arquivo são as referências permanentes para desenvolvimento; use os arquivos de origem fornecidos e confirme premissas quando houver divergências.
