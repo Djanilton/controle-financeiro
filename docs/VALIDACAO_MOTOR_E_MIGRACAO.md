@@ -2,7 +2,7 @@
 
 ## Estado da entrega
 
-Implementação em branch de trabalho, com publicação autorizada para conferência em 25/10/2026 e deploy em acompanhamento pelo PR #1. Nenhuma gravação foi feita nos serviços financeiros. A auditoria inicial comprovava testes e presença dos módulos, mas não a correção integral do motor. Esta etapa acrescenta confronto com a planilha indicada pelo usuário e reconstrução independente do SAC.
+Implementação incorporada à main e publicada para conferência em 25/10/2026 pelo [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1), commit `c32c4bf`. O [workflow 40203918065](https://github.com/Djanilton/controle-financeiro/actions/runs/40203918065) concluiu com sucesso. Nenhuma gravação foi feita nos serviços financeiros. A auditoria inicial comprovava testes e presença dos módulos, mas não a correção integral do motor. Esta etapa acrescenta confronto com a planilha indicada pelo usuário e reconstrução independente do SAC.
 
 As fontes privadas ficaram fora do repositório. A planilha foi obtida em leitura pelo conector OneDrive; a versão encontrada estava modificada em 18/10/2026. Nenhuma base privada foi atualizada para aplicar as correções.
 
@@ -104,7 +104,7 @@ O snapshot privado do validador contém `{config, options, result}`. `config` de
 3. Confirmar catálogo/consentimento e arquitetura do Minhas Finanças; implementar prévia, confirmação, idempotência, status e releitura do CRUD suportado. O site ainda importa pacotes e prepara intenções locais; não executa escrita remota.
 4. Para casos excluídos pelas ferramentas oficiais — vínculos de empréstimo, Open Finance e outros — aguardar suporte do fornecedor; não usar lançamentos substitutos para contornar restrições.
 5. A otimização Equilibrado é busca entre divisões testadas, não prova de ótimo global. Tributação é simplificada, CDI é modelado e liberações da Caixa são hipóteses. A validação numérica não confirma cobrança bancária real ou retorno futuro.
-6. Publicação autorizada pelo usuário; verificação de PR/deploy em andamento, registrada em `REQUISITOS_E_PENDENCIAS.md`. O aceite funcional e as operações financeiras reais continuam separados desta autorização.
+6. Publicação técnica concluída e registrada em `REQUISITOS_E_PENDENCIAS.md`; conferência visual/funcional do usuário ainda pendente. O aceite funcional e as operações financeiras reais continuam separados desta autorização.
 
 ## Substituições deliberadas e revisão no app
 
@@ -114,4 +114,4 @@ O snapshot privado do validador contém `{config, options, result}`. `config` de
 - Os modelos simplificados/estáticos antigos não foram reativados como projeções concorrentes. SAC, reserva, empréstimos e patrimônio continuam ligados ao mesmo motor.
 - Alertas Android com o app fechado não existiam no legado. Lembretes na tela e exportação ICS estão preservados. Não foi introduzido service worker ou promessa de arranque offline.
 
-Para sua conferência, revisar: Premissas → Resumo → Despesas → Cronograma (incluindo registros preservados) → Obrigações/documentos/PCI → Projeção Reserva → Empréstimos. Em Configurações > Importações, conferir leitura da planilha e Opções/cópias: JSON, Excel atual, planilha original, ICS e rascunhos recuperáveis. A publicação foi autorizada e a implementação está no [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1); consultar o registro de PR/deploy em `REQUISITOS_E_PENDENCIAS.md` para o estado verificado mais recente.
+Para sua conferência, revisar: Premissas → Resumo → Despesas → Cronograma (incluindo registros preservados) → Obrigações/documentos/PCI → Projeção Reserva → Empréstimos. Em Configurações > Importações, conferir leitura da planilha e Opções/cópias: JSON, Excel atual, planilha original, ICS e rascunhos recuperáveis. A implementação foi publicada pelo [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1). O deploy foi confirmado pelo GitHub Actions; o acesso HTTP direto deste ambiente foi bloqueado pelo proxy. Consultar `REQUISITOS_E_PENDENCIAS.md` para evidências e pendências; o aceite do usuário permanece aberto.

@@ -8,7 +8,13 @@
 
 **Branch da execução:** `fix/auditoria-motor-migracao`
 
-**Publicação:** autorizada em 25/10/2026; [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1) aberto, merge e deploy em acompanhamento.
+**Publicação:** deploy do GitHub Pages concluído com sucesso em 25/10/2026, pelo [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1).
+
+**Commit publicado da implementação:** `c32c4bfb8181a3b675a2af257d0c26b7a8cd0a21`.
+
+**Deploy verificado:** [workflow 40203918065](https://github.com/Djanilton/controle-financeiro/actions/runs/40203918065).
+
+**Aplicativo:** [Controle Financeiro](https://djanilton.github.io/controle-financeiro/).
 **Commit da implementação:** `4c2c3d50384764ebccf7e0ea34717b0e377412af`.
 **Referência de acompanhamento:** este arquivo, conforme a seção Acompanhamento consolidado obrigatório do `AGENTS.md`.
 
@@ -16,9 +22,9 @@
 
 **A migração integral ainda não está encerrada e o plano completo não foi concluído.** Os recursos úteis identificados no inventário do Minha Obra têm implementação ou substituição documentada no código local. Isso não equivale a aceite do usuário, paridade de todos os dados financeiros atuais, validação externa ou atualização do app publicado.
 
-A auditoria, as correções e a migração funcional identificada foram executadas e testadas localmente. Continuam pendentes: base financeira completa e saldos atuais, autenticação/permissões e gravações reais, abertura dos anexos, instalação/dispositivos físicos, aceite das diferenças, CRUD remoto do Minhas Finanças, revisão e publicação. Não há evidência para declarar esses itens concluídos.
+A auditoria, as correções e a migração funcional identificada foram executadas e testadas localmente. Continuam pendentes: base financeira completa e saldos atuais, autenticação/permissões e gravações reais, abertura dos anexos, instalação/dispositivos físicos, aceite das diferenças e CRUD remoto do Minhas Finanças. A publicação técnica para conferência foi concluída; não encerra essas pendências. Não há evidência para declarar esses itens funcionais e externos concluídos.
 
-**A branch no GitHub já contém a implementação e este acompanhamento.** A nova orientação do `AGENTS.md` foi preservada. O PR #1 reúne a implementação e a documentação; merge e resultado do GitHub Pages ainda serão verificados. A autorização de publicação não encerra o aceite funcional.
+**A main do GitHub já contém a implementação e o acompanhamento, com publicação técnica confirmada pelo workflow.** A nova orientação do `AGENTS.md` foi preservada. O PR #1 foi mesclado e o deploy concluiu com sucesso. O teste HTTP direto a partir deste ambiente foi bloqueado pelo proxy; a conferência visual/funcional do usuário ainda não foi realizada.
 
 ## Objetivo e estados
 
@@ -56,7 +62,7 @@ Os requisitos amplos somente serão encerrados após atender seus critérios de 
 
 ## Correções e entregas registradas na branch
 
-Todas as linhas abaixo pertencem à branch `fix/auditoria-motor-migracao`. Implementação no commit `4c2c3d5`, publicada na branch do PR #1; deploy em acompanhamento. **Implementado** refere-se ao código local; os resultados efetivamente executados estão em E-01 a E-07.
+Todas as linhas abaixo pertencem à branch `fix/auditoria-motor-migracao`. Implementação original no commit `4c2c3d5`, incorporada à main pelo PR #1 no commit publicado `c32c4bf`. **Implementado** refere-se ao código local; os resultados efetivamente executados estão em E-01 a E-07.
 
 | ID | Status / alteração | Arquivos relevantes | Testes realmente executados / resultado | Problemas restantes |
 |---|---|---|---|---|
@@ -69,7 +75,7 @@ Todas as linhas abaixo pertencem à branch `fix/auditoria-motor-migracao`. Imple
 | EXP-01 | **implementado**: Excel atual separado da planilha original; inclui custos editados, programações, obrigações, cláusulas/fontes, histórico de anexos e motor | `construction-export.js`, `construction/embedded.js`, `construction/index.html` | `construction-export.test.cjs`, navegador de migração com download/leitura do Excel; aprovados | Substitui o espelho Excel automático legado por exportação local; JSON é o backup integral |
 | IMP-01 | **implementado**: leitura da planilha da construção em Configurações > Importações > Carga inicial e recuperação, com sessão/confirmação e cópia anterior | `app-refinement.js`, `construction/embedded.js` | `refinement.test.cjs`, `construction-import.test.cjs`, navegador de opções; aprovados no escopo isolado | Leitura por OAuth no dispositivo real não testada |
 | VAL-01 | **implementado**: extrator de fórmulas/caches, CLI de referência e reconstrução Python independente recuperados/adaptados | `tools/extract_workbook.py`, `tools/validate_financing.py`, `tests/validate-reference.cjs`, `verify-migration.cjs`, `verify-private-construction.cjs` | Executados na planilha e nos JSONs de construção, somente leitura; E-02 a E-06 | Fonte bancária completa não acessível; reconstrução não prova ótimo global nem cobrança bancária |
-| DOC-01 | **implementado**: matriz, memória, instruções de exportação/importação e estado atual das capacidades Minhas Finanças | README, `docs/CALCULOS.md`, `MEMORIA_CALCULOS_CONSTRUCAO.md`, `VALIDACAO_MOTOR_E_MIGRACAO.md`, `INTEGRACAO_MINHAS_FINANCAS.md`, este arquivo | Revisão documental e verificação de links/consistência nesta atualização | PR #1 e commit da implementação registrados; acompanhar merge e deploy |
+| DOC-01 | **implementado**: matriz, memória, instruções de exportação/importação e estado atual das capacidades Minhas Finanças | README, `docs/CALCULOS.md`, `MEMORIA_CALCULOS_CONSTRUCAO.md`, `VALIDACAO_MOTOR_E_MIGRACAO.md`, `INTEGRACAO_MINHAS_FINANCAS.md`, este arquivo | Revisão documental e verificação de links/consistência nesta atualização | PR #1 mesclado e deploy confirmado; acompanhamento de publicação registrado abaixo |
 | TEST-01 | **validado**, no escopo executado: portabilidade e ampliação da regressão automatizada | Suítes `tests/`, scripts de navegador e helpers | 212 testes e 11 cenários de navegador aprovados; E-01/E-07 | Não significa que todos os testes de navegador do repositório ou autenticações reais foram executados |
 
 ## P0 — Integração bidirecional com Minhas Finanças
@@ -97,7 +103,7 @@ As ferramentas oficiais consultadas já expõem operações de escrita. Não cla
 | D-02 — Classes e operações ainda excluídas | **bloqueado**, para operações não suportadas pelas ferramentas inspecionadas: vínculos de empréstimo, Open Finance e outras exclusões; não há lote atômico de escritas | Depende de capacidade oficial específica quando o caso concreto se enquadrar. Confirmar parcelas/séries, investimentos, saldo devedor e escopos; não contornar por lançamentos substitutos. Solicitação formal ao desenvolvedor não foi aberta |
 | D-03 — Base financeira completa e saldos atuais | **bloqueado**: leitura de `controle-financeiro-app.json` terminou com `Transport closed` no conector | Restabelecer leitura autorizada ou disponibilizar cópia privada adequada; depois conferir saldos, transações, FGTS e integração patrimonial. As bases privadas de construção foram lidas, mas não substituem a base financeira |
 | D-04 — Validação externa/manual | **não verificado**: não executadas autenticação e gravação reais, abertura individual dos anexos, instalação e uso em dispositivos físicos | Execução autorizada e conferência do usuário; testes isolados não encerram esta etapa |
-| D-05 — Revisão e publicação | **em andamento**: PR #1 aberto; 212 testes e 11 cenários de navegador novamente aprovados antes da publicação | Conferir merge, workflow e versão pública; aceite funcional do usuário permanece pendente |
+| D-05 — Revisão e publicação | **validado**, no escopo da publicação técnica: PR #1 mesclado, commit `c32c4bf`, workflow 40203918065 com sucesso | Teste HTTP direto bloqueado pelo proxy deste ambiente; aceite visual/funcional permanece em D-04 |
 
 As ferramentas de criação, edição de avulsas, alteração de valores de parcelas/recorrências e exclusão já expostas não foram usadas para alterar dados reais. Só abrir solicitação ao fornecedor por capacidades efetivamente ausentes; a indisponibilidade geral de escrita registrada anteriormente foi superada. Nenhuma mensagem foi enviada ao desenvolvedor nesta execução.
 
@@ -145,7 +151,7 @@ E-07 corresponde a `browser-construction-migration.cjs`, `browser-construction-f
 | 5 — Integrar escrita suportada | **não verificado** | Intenções locais e importação são componentes prévios | Executor CRUD, confirmação, idempotência, status, releitura e testes de escrita não implementados no site |
 | 6 — Vincular cálculos e ocorrências remotas | **não verificado** | Motor calcula cenários e importação associa registros | Sincronização de saída por ID/mês/escopo e elegibilidade não implementada |
 | 7 — Validar dados reais e entrega | **em andamento** | Planilha e bases da construção lidas; E-02 a E-06 | D-03/D-04, saldos e transações completos, OAuth, escrita, anexos e dispositivos |
-| 8 — Revisar e publicar | **em andamento** | Autorização recebida; commit `4c2c3d5`, PR #1 e testes finais aprovados | Mesclar PR, verificar deploy e registrar evidência; conferência do usuário ainda pendente |
+| 8 — Revisar e publicar | **em andamento** | Publicação técnica concluída: PR #1 mesclado e deploy confirmado; documentação de resultado enviada na branch `docs/publicacao-conferencia-20261025` | Aceite final e conferência no app ainda pendentes; demais lacunas do plano continuam abertas |
 
 A ordem original de auditoria → contrato do fornecedor/leitura segura → migração incremental → CRUD autorizado → validação/publicação continua válida. A migração avançou independentemente do CRUD. Não foi criada solicitação ao fornecedor, monitoramento, tarefa futura ou execução assíncrona de acompanhamento.
 
@@ -160,4 +166,15 @@ A ordem original de auditoria → contrato do fornecedor/leitura segura → migr
 
 ## Publicação autorizada para conferência — 25/10/2026
 
-O usuário autorizou publicar o aplicativo e manter o GitHub atualizado. Esta autorização cobre commit, envio da branch, PR, merge e acompanhamento do GitHub Pages. Não altera as restrições sobre gravações financeiras reais, não encerra o aceite funcional e não marca MF-03 a MF-06 como implementados. Antes do envio, foram reexecutados os 212 testes e os cinco scripts de navegador (11 cenários), todos aprovados. O PR #1 foi aberto após atualizar a branch sobre a main mais recente, preservando as orientações e requisitos adicionados pelo usuário. O resultado do deploy será registrado após verificação.
+O usuário autorizou publicar o aplicativo e manter o GitHub atualizado. Esta autorização cobre commit, envio da branch, PR, merge e acompanhamento do GitHub Pages. Não altera as restrições sobre gravações financeiras reais, não encerra o aceite funcional e não marca MF-03 a MF-06 como implementados. Antes do envio, foram reexecutados os 212 testes e os cinco scripts de navegador (11 cenários), todos aprovados. O PR #1 foi aberto após atualizar a branch sobre a main mais recente, preservando as orientações e requisitos adicionados pelo usuário. O PR #1 foi mesclado no commit `c32c4bf` e o workflow 40203918065 concluiu com sucesso. A atualização do resultado na documentação não altera o código funcional publicado.
+
+## Resultado da publicação para conferência
+
+| Registro | Status / resultado verificado | Evidência / limite |
+|---|---|---|
+| PUB-01 — Atualização do GitHub | **validado**: PR #1 mesclado; código, testes e documentos integrados à main | [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1), commit `c32c4bfb8181a3b675a2af257d0c26b7a8cd0a21` |
+| PUB-02 — GitHub Pages | **validado**: workflow Publicar no GitHub Pages e etapas de upload/deploy concluídos com sucesso | [Execução 40203918065](https://github.com/Djanilton/controle-financeiro/actions/runs/40203918065) |
+| PUB-03 — Abertura pública a partir deste ambiente | **bloqueado**: requisição HTTP direta impedida pelo proxy (403 no CONNECT) | Conferência visual/funcional no endereço público cabe à revisão no navegador do usuário; não foi tratada como teste aprovado |
+| PUB-04 — Registro do resultado | **implementado**: atualização documental na branch `docs/publicacao-conferencia-20261025`, sem mudança funcional | Commit/PR desta atualização registrados no histórico do GitHub; o registro não reexecuta nem encerra validações externas |
+
+A publicação técnica não altera MF-03 a MF-06, D-01 a D-04, FIN-01/FIN-02/FIN-04/FIN-05 nem os critérios de aceite ainda abertos. Não foram gravadas transações ou bases financeiras reais.
