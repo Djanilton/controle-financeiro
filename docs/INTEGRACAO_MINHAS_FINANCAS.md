@@ -21,13 +21,25 @@ O formato `minhas-financas-report-v1` exige perfil, BRL, período, paginação c
 - A primeira aplicação preserva uma cópia local `before-minhas-financas-import`; repetir o mesmo pacote não substitui essa cópia nem gera novas transações. A sincronização da base continua usando backup e controle de conflitos.
 - Planilhas, PDFs e o JSON original da construção não são alterados. Pacotes privados, dados financeiros, IDs e credenciais não pertencem ao GitHub.
 
-## Atualizações no Minhas Finanças: limite confirmado
+## Capacidades atuais — consulta de 25/10/2026
 
-A ajuda oficial consultada confirma a alteração de uma parcela ou mês individual na interface do aplicativo. Isso não confirma disponibilidade equivalente por MCP. As capacidades e ferramentas expostas nesta sessão continuam restringindo a edição geral a transações manuais avulsas compatíveis. Não há uma ferramenta exposta para alterar as parcelas existentes e as receitas recorrentes pretendidas pelo usuário.
+O registro de 21/10 de que não havia ferramenta para valores de parcelas/receitas recorrentes foi superado pelas ferramentas expostas em 25/10. O site continua sem executor MCP/CRUD remoto: importa pacotes privados e mantém intenções locais para envio pelo chat.
 
-Não se deve tentar contornar isso criando lançamentos substitutos, removendo vínculos, omitindo a recorrência, usando credenciais do cliente fora de seu contexto ou afirmando que as transações foram atualizadas. Quando houver ferramenta oficial compatível, cada ocorrência deverá ser identificada pelo ID e mês corretos, comparada com o cálculo, submetida à revisão exigida e conferida após a confirmação. Publicar um comando não comprova sua aplicação no dispositivo.
+- Criação de receitas, despesas, transferências e séries futuras tem ferramentas dedicadas.
+- `prepare_transaction_edit` atende edição geral de avulsas manuais compatíveis.
+- `prepare_transaction_value` está exposta para valor de receita/despesa/transferência manual, inclusive fixa ou parcelada: mês explícito, valor por ocorrência e escopo `single` ou `from_selected`.
+- `prepare_transaction_delete` está exposta com escopos próprios e confirmação obrigatória; exclusão pode ser irreversível.
+- Alteração de valores fixos de despesa/transferência e liquidação possuem ferramentas e permissões específicas. Não extrapolar suas exceções para outras operações.
 
-As colunas de conciliação não devem ser removidas sob a premissa de que a sincronização de saída já ocorreu. Nenhuma transação realizada deve ser reescrita com uma projeção.
+As ferramentas de valor/exclusão não apareciam na lista retornada por `get_user_capabilities`, embora seus schemas estivessem expostos. Confirmar catálogo e consentimento v10 antes de implementar; exposição não comprova autorização para todo lançamento. Não foi preparado nem enviado comando real nesta validação.
+
+Transações vinculadas a empréstimos, Open Finance, múltiplas categorias, anexos e outros casos excluídos nas ferramentas continuam dependendo de suporte oficial específico. Identificar o tipo e o ID do financiamento; a descrição não prova que o lançamento seja uma despesa manual elegível. Não criar substitutos para contornar uma operação indisponível.
+
+A integração futura precisa persistir ID local/remoto, mês, escopo, prévia, confirmação, chave idempotente e status; reler o resultado antes de marcar conciliação. Despesa e resgate são comandos separados, sem atomicidade. Publicação de um comando não confirma aplicação no dispositivo. API segura para cliente externo/navegador, OAuth/CORS e limites precisam de contrato oficial; não colocar credenciais do plugin no GitHub Pages.
+
+As colunas de conciliação permanecem necessárias. Projeções não devem reescrever lançamentos realizados. A consulta e a geração de pacotes seguem acionadas pelo usuário no chat.
+
+Os dois formatos aceitos são `minhas-financas-report-v1` e `minhas-financas-source-report-v1`. No segundo, páginas completas de previsões pendentes simples confirmadas podem dispensar detalhes; efetivados e múltiplas categorias continuam exigindo detalhes. Isso não transforma relatório resumido em exportação completa.
 
 ## Balanço e resgates
 

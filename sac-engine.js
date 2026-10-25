@@ -81,7 +81,9 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   const baseDebt=Math.min(availableDebt,fgts+plrDebt+debtPrograms);
   const appliedAutoDebt=Math.min(Math.max(0,availableDebt-baseDebt),autoDebt);
   const parkedDebt=inConstruction?requestedDebtPrograms:0;
-  const autoCash=autoAmount-appliedAutoDebt+parkedDebt;
+  // FGTS stays in its own account; unused external amortization returns to reserve.
+  const returnedProgram=c.trCapitalizes===false?0:Math.max(0,debtPrograms-Math.max(0,baseDebt-fgts-plrDebt));
+  const autoCash=autoAmount-appliedAutoDebt+parkedDebt+returnedProgram;
   allocation.push({month:date,investmentRate:net,financeRate,destination,phase:inConstruction?'Construção':'Amortização',extra:autoAmount+parkedDebt,toDebt:appliedAutoDebt,toInvestment:autoCash});
   const extra=debt<=0?0:Math.min(c.trCapitalizes===false?debt+tr+interest+amortization:Math.max(0,correctedDebt-amortization),fgts+plrDebt+debtPrograms+appliedAutoDebt);
   const installment=(debt<=0?(inConstruction?c.dfi+c.admin:0):interest+amortization+mip+c.dfi+c.admin)+(inConstruction?correctedDebt-debt:0);
@@ -92,7 +94,7 @@ function calculate(c,{expenses=null,programs=[],movements=[]}={}){
   sac.push(s);
   const activeBanks=bankMode&&date>=anchorMonth,currentMonth=bankMode&&date===anchorMonth,days=currentMonth?new Date(Date.UTC(year,mo,0)).getUTCDate():1,remaining=currentMonth?(days-Number(asOfDate.slice(8,10)))/days:1;
   const ledger=activeBanks?c.bankForecast?.[date]:null,ledgerIn=ledger?sum(['sofisa','itau'].map(k=>ledger[k].inflow)):0,ledgerOut=ledger?sum(['sofisa','itau'].map(k=>ledger[k].outflow)):0;const bankOpening=activeBanks?{...banks}:null,bankEarnings=activeBanks?Object.fromEntries(['sofisa','itau'].map(key=>[key,banks[key]*((1+((1+annual*(key==='sofisa'?c.cdbShare:c.itauCdiShare??1))**(1/12)-1)*factor)**remaining-1)])):null;
-  const earnings=activeBanks?sum(Object.values(bankEarnings)):(currentFunds?Math.max(0,reserve):reserve)*net,cashRate=activeBanks?(reserve?earnings/reserve:0):net,plrApplied=Math.min(plrDebt,extra),plrCash=currentMonth&&c.skipCurrentUndatedInflows?0:mixed&&plrEvent?c.plr*(1-(debt>0&&!inConstruction?c.plrDebtShare:0))*c.plrCashFactor+Math.max(0,plrDebt-plrApplied):c.strategy==='CDB'&&mo===4?c.plr*c.plrCashFactor:inConstruction&&c.strategy==='Finan'&&m%12===0?c.plr:0;
+  const earnings=activeBanks?sum(Object.values(bankEarnings)):(currentFunds?Math.max(0,reserve):reserve)*net,cashRate=activeBanks?(reserve?earnings/reserve:0):net,plrApplied=Math.min(plrDebt,c.trCapitalizes===false?extra:Math.max(0,extra-fgts)),plrCash=(currentMonth&&c.skipCurrentUndatedInflows?0:mixed&&plrEvent?c.plr*(1-(debt>0&&!inConstruction?c.plrDebtShare:0))*c.plrCashFactor+Math.max(0,plrDebt-plrApplied):c.strategy==='CDB'&&mo===4?c.plr*c.plrCashFactor:c.strategy==='Finan'&&m%12===0&&(inConstruction||c.trCapitalizes!==false&&debt<=0)?c.plr:0)+(c.trCapitalizes!==false&&!mixed?Math.max(0,plrDebt-plrApplied):0);
   const baseSalary=date<c.salaryStart?0:date<=c.salaryStep?c.salaryFirst:c.salaryLater;
   const salProgram=sum(scheduled.filter(x=>x.tipo==='salario').map(x=>number(x.valor,'salário'))),extraProgram=currentMonth&&c.skipCurrentUndatedInflows?0:sum(scheduled.filter(x=>x.tipo==='extra'&&c.autoExtras===false).map(x=>number(x.valor,'aporte extra')));
   const manual=movements.filter(x=>month(x.competencia)===date&&(!currentMonth||!c.skipCurrentUndatedInflows||String(x.data||x.competencia).length>=10&&String(x.data||x.competencia)>asOfDate)),manualIn=ledgerIn+sum(manual.map(x=>Number(x.entrada)||0)),manualOut=ledgerOut+sum(manual.map(x=>Number(x.saida)||0));

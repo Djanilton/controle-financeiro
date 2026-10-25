@@ -1,5 +1,7 @@
 # Cálculos e fontes
 
+A memória detalhada da construção, com o mapa de fórmulas e as diferenças entre referência e cenário operacional, está em [Memória dos cálculos da construção](MEMORIA_CALCULOS_CONSTRUCAO.md).
+
 Dados privados são importados para o navegador, nunca para o GitHub. Cada dispositivo precisa importar os dados ou conectar-se ao OneDrive.
 
 ## Contas e despesas
