@@ -26,6 +26,7 @@ jobs:
         env:
           PLAYWRIGHT_MODULE: /tmp/ci-browser/node_modules/playwright
         run: |
+          node tests/browser-base-reconciliation.cjs
           node tests/browser-settings.cjs
           node tests/browser-construction-sessions.cjs
           node tests/browser-minhas-financas.cjs
