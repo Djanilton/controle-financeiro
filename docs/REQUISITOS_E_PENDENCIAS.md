@@ -5,7 +5,7 @@
 **Legado de referência:** [Djanilton/minha-obra-app](https://github.com/Djanilton/minha-obra-app)  
 **Branch da execução:** `fix/auditoria-motor-migracao`  
 **Publicação:** autorizada em 25/10/2026; [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1) aberto, merge e deploy em acompanhamento.
-**Commit da implementação:** `4c2c3d50384764ebccf7e0ea34717b0e377412af`.  
+**Commit da implementação:** `4c2c3d50384764ebccf7e0ea34717b0e377412af`.
 **Referência de acompanhamento:** este arquivo, conforme a seção Acompanhamento consolidado obrigatório do `AGENTS.md`.
 
 ## Resposta sobre conclusão

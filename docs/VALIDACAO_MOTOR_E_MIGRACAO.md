@@ -2,7 +2,7 @@
 
 ## Estado da entrega
 
-Implementação em branch de trabalho, com publicação autorizada para conferência em 25/10/2026 e preparação do deploy em andamento. Nenhuma gravação foi feita nos serviços financeiros. A auditoria inicial comprovava testes e presença dos módulos, mas não a correção integral do motor. Esta etapa acrescenta confronto com a planilha indicada pelo usuário e reconstrução independente do SAC.
+Implementação em branch de trabalho, com publicação autorizada para conferência em 25/10/2026 e deploy em acompanhamento pelo PR #1. Nenhuma gravação foi feita nos serviços financeiros. A auditoria inicial comprovava testes e presença dos módulos, mas não a correção integral do motor. Esta etapa acrescenta confronto com a planilha indicada pelo usuário e reconstrução independente do SAC.
 
 As fontes privadas ficaram fora do repositório. A planilha foi obtida em leitura pelo conector OneDrive; a versão encontrada estava modificada em 18/10/2026. Nenhuma base privada foi atualizada para aplicar as correções.
 
@@ -114,4 +114,4 @@ O snapshot privado do validador contém `{config, options, result}`. `config` de
 - Os modelos simplificados/estáticos antigos não foram reativados como projeções concorrentes. SAC, reserva, empréstimos e patrimônio continuam ligados ao mesmo motor.
 - Alertas Android com o app fechado não existiam no legado. Lembretes na tela e exportação ICS estão preservados. Não foi introduzido service worker ou promessa de arranque offline.
 
-Para sua conferência, revisar: Premissas → Resumo → Despesas → Cronograma (incluindo registros preservados) → Obrigações/documentos/PCI → Projeção Reserva → Empréstimos. Em Configurações > Importações, conferir leitura da planilha e Opções/cópias: JSON, Excel atual, planilha original, ICS e rascunhos recuperáveis. A publicação foi autorizada e está em preparação; consultar o registro de PR/deploy em `REQUISITOS_E_PENDENCIAS.md` para o estado verificado mais recente.
+Para sua conferência, revisar: Premissas → Resumo → Despesas → Cronograma (incluindo registros preservados) → Obrigações/documentos/PCI → Projeção Reserva → Empréstimos. Em Configurações > Importações, conferir leitura da planilha e Opções/cópias: JSON, Excel atual, planilha original, ICS e rascunhos recuperáveis. A publicação foi autorizada e a implementação está no [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1); consultar o registro de PR/deploy em `REQUISITOS_E_PENDENCIAS.md` para o estado verificado mais recente.
