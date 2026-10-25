@@ -347,3 +347,40 @@ Mesma branch `feat/conciliacao-base-privada`; push e abertura de PR autorizados,
 - Limites: diário e backups dependem de armazenamento disponível. Falha persistente exige exportar cópias enquanto a página está aberta e restaurar em ambiente privado controlado; não limpar armazenamento nem forçar sobrescrita. Arrays sem identidade e correspondências ambíguas continuam sem mesclagem automática; revisão externa necessária. Sem atomicidade distribuída, resultado remoto incerto exige releitura e nova conferência, não repetição cega.
 
 **Evidência remota:** PR https://github.com/Djanilton/controle-financeiro/pull/5, implementação `e14bde6ea6b498f73fc5a24bbc1e20390c947846`; CI https://github.com/Djanilton/controle-financeiro/actions/runs/40226027001 concluído com success, incluindo regressão Node/validador e navegador. Sem merge/deploy/aplicação real. Apto para revisão técnica e publicação controlada mediante autorização; não equivale a aceite para conciliar a base real.
+
+### Publicação autorizada do PR #5 — 25/10/2026 (registro local)
+
+HEAD pré-merge confirmado em `b6d8b4a561197ee031728431376f810a15b44983`, check tests success; diff com nove arquivos esperados, sem dados financeiros privados/credenciais e git diff --check aprovado. Squash integrado à main: `19f90908cf1c22a333f0199035c416ccf6c18192`.
+
+Deploy https://github.com/Djanilton/controle-financeiro/actions/runs/40226393502 concluído com success, head_sha correspondente ao commit integrado. Abertura HTTP pública bloqueada pelo proxy 403 CONNECT; não foi possível verificar bytes/navegação servidos publicamente. No mesmo commit local, Chromium browser-base-reconciliation aprovado com dados sintéticos: UI de diferenças, exportação e bloqueio após recarga. Nenhuma aplicação ou sincronização real executada.
+
+Registro preservado somente localmente para a próxima atualização documental, sem commit/push/deploy exclusivo. Nenhuma implementação adicional iniciada. Permanecem pendentes validação da base real, OAuth real, causa histórica do Transport closed e durabilidade com armazenamento indisponível.
+
+Uso somente de leitura: guardar cópia privada do OneDrive e exportar base local antes de iniciar; em Configurações, Comparar local e nuvem ativa bloqueio persistente antes da leitura, mesmo se faltar sessão; reconectar somente depois de ativar esse bloqueio, sem usar Autorizar e sincronizar. Exportar local/cloud/report e revisar proposta sem clicar Aplicar proposta revisada e sincronizar. Não limpar armazenamento para retirar o bloqueio. A inicialização fora desse modo ainda pode tentar sincronização automática; para garantia de ausência de qualquer escrita, bloquear métodos de escrita remotos antes de autenticar. URL/relatórios/cópias privadas não devem ser compartilhados publicamente.
+
+### Renovação de leitura na conciliação — correção local (25/10/2026)
+
+Branch `fix/autenticacao-conciliacao`, criada sobre main `19f9090`, com registro documental local da publicação preservado. Sem commit, push ou deploy; nenhum acesso/gravação financeira real.
+
+**Diagnóstico demonstrado pelo código e testes:** o botão de conexão utiliza a presença de conta MSAL; não comprova token Files.Read válido. A comparação usa Graph silent=true; `acquireTokenSilent` pode falhar antes de qualquer metadado/download. O erro genérico anterior não oferecia recuperação de leitura. Isso explica o estado conta conectada/token indisponível, sem provar a causa específica da sessão real no computador; diferença celular/desktop pode envolver cache, sessão, políticas do navegador ou consentimento, ainda não medidos.
+
+**Implementado:**
+- `app.js`: aquisição silenciosa tem código READ_AUTH_REQUIRED; Graph diferencia autenticação HTTP 401, permissão 403, conexão e outros status, sem ler/exibir corpos de erro privados. Preserva HTTP 404 para base inexistente. Token e downloadUrl não aparecem nas mensagens.
+- `app-state.js`: botão **Renovar acesso de leitura Microsoft** usa acquireTokenPopup em ação explícita, apenas User.Read/Files.Read. Bloqueio persistente de gravação é ativado antes de abrir autenticação. Não chama login/importações/salvamento, não solicita Files.ReadWrite, não usa redirect automático; cancelamento/popup bloqueado gera orientação segura e mantém base local. Depois da renovação refaz apenas comparação; nenhum fallback interativo em tarefas de fundo. ETag, backups e verificações locais preservados. Diagnósticos distinguem autenticação, Graph/permissão, download e conciliação, sem repassar erros arbitrários.
+- `settings-workspace.js`: quadro de conciliação e botão de aplicação aparecem somente em Sincronizações, não em Importações.
+
+**Evidências executadas:** 257 testes Node aprovados, zero falhas; inclui regressão financeira independente. `tests/read-auth.test.cjs` cobre token silencioso expirado, Graph 401/403/500, rede e ausência de corpo privado em mensagens. Testes de estado cobrem escopos somente leitura, bloqueio antes do popup, cancelamento e ausência de escritas. Chromium `browser-base-reconciliation.cjs` e `browser-settings.cjs` aprovados; asserções comprovam quadro ausente em Importações e único em Sincronizações. Testes são sintéticos, não autenticação Microsoft real. `git diff --check` aprovado.
+
+**Procedimento posterior à publicação autorizada:** guardar cópia local privada; em Configurações > Sincronizações usar Comparar local e nuvem para ativar bloqueio; se diagnóstico indicar renovação silenciosa indisponível, clicar Renovar acesso de leitura Microsoft e permitir somente a janela Microsoft do site. Após retorno, comparar e exportar cópias/relatório. Não usar Autorizar e sincronizar nem Aplicar proposta para este diagnóstico. Se persistir, registrar apenas etapa/código/status e comportamento do popup, nunca token/URL/cópia pública. Bloqueios de popup/cookies e sessão real continuam dependentes de validação no computador do usuário. Transport closed do conector permanece problema separado, não reparado por esta alteração.
+
+GitHub permanece sem estas alterações locais. Nenhum motor financeiro, dado real ou arquivo privado alterado. Próximo passo: revisão da branch e autorização específica antes de publicação, depois conferir renovação no navegador afetado.
+
+### Revisão autorizada para PR da autenticação — 25/10/2026
+
+Mesma branch `fix/autenticacao-conciliacao`; commit/push desta branch e PR autorizados, sem merge/deploy/escrita real. Revisão do diff confirma escopos exclusivamente User.Read/Files.Read na renovação e ausência de chamada a login/importação/gravação. Bloqueio ativado antes de readyAuth/popup, mantido durante e depois, inclusive cancelamento ou Graph 403; nenhum desbloqueio automático adicionado.
+
+Regressão reexecutada: **259 testes Node aprovados, zero falhas**, incluindo motor independente e sincronização. Dois casos adicionais verificam recusa de saveAppState durante/após popup e após falha Graph, metadados persistentes reviewLocked e zero escritas simuladas. Quatro scripts Chromium aprovados: base-reconciliation, settings, construction-sessions e minhas-financas. `git diff --check` aprovado. Arquivos revisados restritos à autenticação/diagnóstico, UI, testes sintéticos e acompanhamento; sem bases privadas/credenciais.
+
+Limites: testes simulados não confirmam sessão/cookies/popup do computador afetado nem corrigem Transport closed do conector. Operações remotas iniciadas antes de ativar o bloqueio não são retroativamente canceladas. Validação real posterior deve começar com backups privados e sem aplicação/sincronização. CI remoto será conferido após abertura do PR; não confundir aprovação local com autenticação real.
+
+**CI remoto confirmado:** PR https://github.com/Djanilton/controle-financeiro/pull/6, implementação `02b4e8bc5409072cef19658a58123ef4f96d74e1`; execução https://github.com/Djanilton/controle-financeiro/actions/runs/40234564039 concluída com success, incluindo regressão Node/validador independente e navegador sintético. Sem merge/deploy. Apto para revisão e publicação controlada mediante autorização; autenticação real do computador afetado ainda não validada.
