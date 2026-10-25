@@ -58,9 +58,11 @@ O modo **Equilibrado** usa o mesmo motor SAC e de caixa. Simula divisões da PLR
 
 O planejamento percorre os compromissos futuros de trás para frente para determinar a cobertura necessária. Pode antecipar aportes do salário para meses anteriores à falta de recursos, mas nunca ultrapassa os limites cadastrados. Esses aportes aparecem separadamente nas tabelas. A taxa conservadora da cobertura usa a menor remuneração das duas aplicações; o fluxo final é recalculado por banco, com Sofisa antes de Itaú. Se os recursos não bastarem, a insuficiência continua explícita: o aplicativo não cria renda nem apenas esconde a falta com um saldo zerado.
 
-A atualização aplica essa política uma vez, preservando a configuração anterior no armazenamento privado e usando o backup e controle de conflito existentes para sincronizar a alteração. A planilha original e sua regra histórica não são modificadas. O Resumo distingue custo do projeto, valores pagos, recursos reservados e disponibilidade mensal. Documentos e anexos contratuais aparecem em um único quadro. Erros das primeiras importações deixam a lista ativa, com uma cópia privada recuperável; novos erros continuam visíveis.
+A migração preserva a estratégia cadastrada. O modo Equilibrado pode ser escolhido em Construção > Premissas. Configurações e backups de políticas aplicadas em versões anteriores são mantidos; a migração não reverte nem reaplica escolhas automaticamente. A planilha original e sua regra histórica não são modificadas. O Resumo distingue custo do projeto, valores pagos, recursos reservados e disponibilidade mensal. Documentos e anexos contratuais aparecem em um único quadro. Erros das primeiras importações deixam a lista ativa, com uma cópia privada recuperável; novos erros continuam visíveis.
 
 ## Desenvolvimento
+
+A conferência do motor, a matriz de migração e os limites da validação de 25/10 estão em [Validação do motor e migração](docs/VALIDACAO_MOTOR_E_MIGRACAO.md). A importação conserva os parâmetros da referência validada, sem impor valores históricos de FGTS. Em Opções e cópias da construção, **Exportar acompanhamento atual (Excel)** baixa os registros e o cenário atuais; **Exportar planilha original** baixa a fonte. Use o backup JSON para restauração integral.
 
 O projeto é estático e não exige instalação. Sirva a pasta por HTTP para testar. Os testes do núcleo rodam com:
 
@@ -83,3 +85,9 @@ O importador aceita Origem/Destino e Conta Origem/Conta Destino. Bases antigas c
 O saldo disponível hoje usa somente os movimentos até a data de referência. Já o Balanço Patrimonial usa fechamentos mensais completos, com receitas, despesas e transferências previstas até o fim de cada mês. A coluna Empréstimos mostra a parcela calculada, enquanto o Total patrimonial continua abatendo o saldo devedor uma única vez.
 
 A reserva da construção parte do saldo disponível hoje e incorpora os lançamentos futuros das duas aplicações, sem reaplicar períodos passados. Na reserva, rendimentos fictícios lançados como receitas são ignorados: o motor calcula CDI, percentual da instituição e fator líquido sobre o saldo remanescente, proporcional aos dias restantes no mês atual. O Balanço Patrimonial, separadamente, continua mostrando os fechamentos pelos lançamentos previstos. Liberações da Caixa, PLR já modelada e pagamentos de despesas provisionadas permanecem em seus fluxos próprios, sem duplicação na reserva livre. Transferências entre as duas aplicações apenas redistribuem o capital livre disponível. Saldo líquido da Obra mostra PLR consolidada, FGTS aplicado à amortização e a parcela/saldo devedor do mesmo cenário da aba Empréstimos. FGTS destinado à dívida não entra novamente na reserva bancária.
+
+### Cópias da construção e revisão de rascunhos
+
+Em Configurações > Importações > Carga inicial e recuperação, **Ler planilha da construção no OneDrive** usa a localização privada configurada nas opções da construção. A aplicação valida os valores antes de importar e guarda uma cópia local anterior, disponível para exportação em Opções e cópias da construção. Nenhuma planilha original é regravada.
+
+Rascunhos de sessões diferentes têm cópias independentes. Recarregar uma aba restaura seu rascunho; cópias deixadas por outras sessões aparecem em **Rascunhos recuperáveis** nas opções da construção. Conflitos com a nuvem continuam exigindo revisão. O acompanhamento Excel inclui custos editados, programações, obrigações, cláusulas e histórico de anexos; o backup JSON conserva o estado integral para recuperação.

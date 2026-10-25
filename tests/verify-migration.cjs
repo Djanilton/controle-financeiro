@@ -1,7 +1,7 @@
 // Local read-only comparison; no financial data is saved or published.
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),X=require('../vendor/xlsx.full.min.js'),A=require('../sac-adapter.js'),E=require('../sac-engine.js'),P=require('../construction-finance.js');
 const path=process.argv[2];if(!path)throw Error('Informe a planilha de referência para a conferência local.');
-const config=A.configFromCells(A.cellsFromXlsx(X.read(fs.readFileSync(path),{type:'buffer',cellDates:true}))),state={meta:{engine:{config:{...config,fgts:77000,premiseFgts:77000}},programacoes:[]},items:{gastos:[],meses:[]}};
+const config=A.configFromCells(A.cellsFromXlsx(X.read(fs.readFileSync(path),{type:'buffer',cellDates:true}))),state={meta:{engine:{config:{...config}},programacoes:[]},items:{gastos:[],meses:[]}};
 const source=fs.readFileSync(require('node:path').join(__dirname,'reference/minha-obra-engine-ui.js'),'utf8'),ownSection=source.slice(source.indexOf('ownCostRows=function'),source.indexOf('var oldUpdateOwn=')),resultFunction=source.split(/\r?\n/).find(x=>x.startsWith('function engineResult()'));
 const helpers=source.slice(source.indexOf('function contractorPayments()'),source.indexOf('function engineControls()'))+source.slice(source.indexOf('function findStageRecord('));
 const context={state,structuredClone,MinhaObraEngine:E,engineModel:()=>state.meta.engine.config,list:k=>state.items[k]||[],originalCosts:()=> (state.meta.engine.config.legacyCosts||[]).map(([id,amount])=>({id,name:id,planned:amount,paid:0,custom:false}))};vm.createContext(context);vm.runInContext(ownSection+'\n'+helpers+'\n'+resultFunction,context);
