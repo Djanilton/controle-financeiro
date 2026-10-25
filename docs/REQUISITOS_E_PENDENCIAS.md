@@ -6,7 +6,7 @@
 
 **Legado de referência:** [Djanilton/minha-obra-app](https://github.com/Djanilton/minha-obra-app)
 
-**Branch da execução:** `fix/auditoria-motor-migracao`
+**Branch da implementação:** `fix/auditoria-motor-migracao`; **base desta auditoria:** `main` em `1a8a700`.
 
 **Publicação:** deploy do GitHub Pages concluído com sucesso em 25/10/2026, pelo [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1).
 
@@ -151,7 +151,7 @@ E-07 corresponde a `browser-construction-migration.cjs`, `browser-construction-f
 | 5 — Integrar escrita suportada | **não verificado** | Intenções locais e importação são componentes prévios | Executor CRUD, confirmação, idempotência, status, releitura e testes de escrita não implementados no site |
 | 6 — Vincular cálculos e ocorrências remotas | **não verificado** | Motor calcula cenários e importação associa registros | Sincronização de saída por ID/mês/escopo e elegibilidade não implementada |
 | 7 — Validar dados reais e entrega | **em andamento** | Planilha e bases da construção lidas; E-02 a E-06 | D-03/D-04, saldos e transações completos, OAuth, escrita, anexos e dispositivos |
-| 8 — Revisar e publicar | **em andamento** | Publicação técnica concluída: PR #1 mesclado e deploy confirmado; documentação de resultado enviada na branch `docs/publicacao-conferencia-20261025` | Aceite final e conferência no app ainda pendentes; demais lacunas do plano continuam abertas |
+| 8 — Revisar e publicar | **em andamento** | Publicação técnica concluída: PR #1 mesclado e deploy confirmado; documentação de resultado enviada incorporada à `main` pelo PR #2 (`1a8a700`) | Aceite final e conferência no app ainda pendentes; demais lacunas do plano continuam abertas |
 
 A ordem original de auditoria → contrato do fornecedor/leitura segura → migração incremental → CRUD autorizado → validação/publicação continua válida. A migração avançou independentemente do CRUD. Não foi criada solicitação ao fornecedor, monitoramento, tarefa futura ou execução assíncrona de acompanhamento.
 
@@ -175,6 +175,19 @@ O usuário autorizou publicar o aplicativo e manter o GitHub atualizado. Esta au
 | PUB-01 — Atualização do GitHub | **validado**: PR #1 mesclado; código, testes e documentos integrados à main | [PR #1](https://github.com/Djanilton/controle-financeiro/pull/1), commit `c32c4bfb8181a3b675a2af257d0c26b7a8cd0a21` |
 | PUB-02 — GitHub Pages | **validado**: workflow Publicar no GitHub Pages e etapas de upload/deploy concluídos com sucesso | [Execução 40203918065](https://github.com/Djanilton/controle-financeiro/actions/runs/40203918065) |
 | PUB-03 — Abertura pública a partir deste ambiente | **bloqueado**: requisição HTTP direta impedida pelo proxy (403 no CONNECT) | Conferência visual/funcional no endereço público cabe à revisão no navegador do usuário; não foi tratada como teste aprovado |
-| PUB-04 — Registro do resultado | **implementado**: atualização documental na branch `docs/publicacao-conferencia-20261025`, sem mudança funcional | Commit/PR desta atualização registrados no histórico do GitHub; o registro não reexecuta nem encerra validações externas |
+| PUB-04 — Registro do resultado | **validado**: atualização documental incorporada à `main` pelo PR #2 (`1a8a700`), sem mudança funcional | Commit/PR desta atualização registrados no histórico do GitHub; o registro não reexecuta nem encerra validações externas |
 
 A publicação técnica não altera MF-03 a MF-06, D-01 a D-04, FIN-01/FIN-02/FIN-04/FIN-05 nem os critérios de aceite ainda abertos. Não foram gravadas transações ou bases financeiras reais.
+
+## Auditoria da versão publicada — 25/10/2026
+
+Base: `main` no commit `1a8a700dbb73795655ddb2486412b4eff50d2bac`. Foram relidos `AGENTS.md`, este documento, o histórico Git e o inventário dos 71 arquivos em `tests/`. O PR #1 (`c32c4bf`) publicou a implementação; o PR #2 (`1a8a700`) atualizou a documentação. Esta auditoria documental não reexecutou testes nem leu dados financeiros privados. E-01 a E-07 registram os resultados da execução anterior; a existência dos 71 arquivos de teste não comprova a execução de todos eles.
+
+| Situação comprovada | Funcionalidades / arquivos | Evidência e limite |
+|---|---|---|
+| Implementado e validado localmente | Importação segura e backup (`construction/engine-ui.js`, `construction/embedded.js`); amortização, FGTS e PLR (`sac-engine.js`); merge de obrigações (`construction-migration.js`); rascunhos (`construction-drafts.js`, `construction-host.js`); exportação (`construction-export.js`) | COR-01 a TEST-01, E-01 a E-07; publicação pelo PR #1 e workflow 40203918065. Validação limitada a cenários sintéticos e fontes descritas. |
+| Implementado, sem validação externa | Leitura OneDrive no perfil real, recuperação de backup real, anexos, instalação/arranque offline, parâmetros contratuais vigentes e conferência funcional do site publicado | MIG-05/06/09, FIN-02, D-04 e PUB-03; testes simulados não encerram esses itens. |
+| Incompleto | Consulta direta e CRUD remoto do Minhas Finanças, releitura após escrita e envio de projeções por ocorrência | MF-01 a MF-08; intenções locais e importação de pacotes não comprovam escrita remota. |
+| Dependências e problemas conhecidos | Base financeira completa; contrato de autenticação, permissões, API/CORS e capacidades específicas do fornecedor | D-01 a D-03: `Transport closed` na leitura da base; proxy 403 na abertura HTTP pública (PUB-03). Sem evidência de resolução. |
+
+**Prioridades:** P0, conferir o aplicativo publicado e recuperar acesso autorizado à base financeira completa para reconciliar saldos; P0, definir contrato seguro com Minhas Finanças; P1, implementar CRUD com prévia, confirmação, idempotência e releitura; P1, validar OAuth, anexos e PWA em dispositivos reais. Preservar a matriz e atualizar este documento junto com cada alteração futura, conforme `AGENTS.md`.
