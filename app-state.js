@@ -18,10 +18,11 @@ async function readAppState({force=false}={}){
  const item=await appStateMetadata();appLastCheck=Date.now();
  if(!item){appRemote=null;if(hasAppData()){appSync.dirty=true;saveSyncMeta();await saveAppState()}return false}
  if(item.eTag===appSync.etag&&appRemote){if(appSync.dirty)await saveAppState();return false}
- if(appSync.dirty&&appSync.etag!==item.eTag)throw Error('Há alterações neste dispositivo e outra versão na nuvem. Abra Configurações para conferir as cópias.');
+
  const readSignature=appStateSignature();
  const value=validateAppState(await(await graph('/me/drive/items/'+encodeURIComponent(item.id)+'/content',{silent:true})).json());
  if(appStateSignature()!==readSignature)throw Error('Os dados locais mudaram durante a leitura da nuvem. Suas alterações foram preservadas; tente sincronizar novamente.');
+ if(appSync.dirty&&appSync.etag!==item.eTag){if(!appSync.pendingSignature||appStateSignature(value)!==appSync.pendingSignature)throw Error('Há alterações neste dispositivo e outra versão na nuvem. Abra Configurações para conferir as cópias.');appSync.etag=item.eTag;delete appSync.pendingSignature;saveSyncMeta()}
  appRemote={item,value};if(appSync.dirty){await saveAppState();return false}
  appLoading=true;try{if(hasAppData())await appDbBefore('before-cloud-sync',{data:structuredClone(data),manual:structuredClone(manual)});if(appStateSignature()!==readSignature)throw Error('Os dados locais mudaram durante a recuperação. Alterações preservadas.');const construction=Object.fromEntries(['constructionSnapshot','constructionStatus','constructionImportedAt','constructionItemId','constructionEtag','financingConfig'].filter(k=>data[k]!==undefined).map(k=>[k,data[k]]));data={...value.data,...construction};manual=structuredClone(value.manual);appManualBefore();invalidateModel();await appDbBefore('main',data);appSync={etag:item.eTag,dirty:false};saveSyncMeta();appSignature=appStateSignature();appSyncStatus='Sincronizado com o OneDrive';render();return true}finally{appLoading=false;appChanged()}
 }
@@ -31,7 +32,7 @@ async function saveAppState(){
  appSyncTask=(async()=>{const revision=appRevision,current=await appStateMetadata();if((current?.eTag||'')!==(appSync.etag||''))throw Error('Outra sessão alterou a base. Suas alterações locais foram preservadas; confira em Configurações.');
   const folder=await constructionFolder(),prefix='/me/drive/items/'+encodeURIComponent(folder.id)+':/';
   if(current&&!appBackupMade){const old=appRemote?.value||await(await graph('/me/drive/items/'+encodeURIComponent(current.id)+'/content',{silent:true})).json();await authorizedWrite(prefix+'controle-financeiro-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json:/content',JSON.stringify(old));appBackupMade=true}
-  const payload={...appStateData(),savedAt:new Date().toISOString()},saved=await authorizedWrite(current?'/me/drive/items/'+encodeURIComponent(current.id)+'/content':prefix+APP_STATE_FILE+':/content',JSON.stringify(payload),current?.eTag||null);appRemote={item:saved,value:payload};appSync.etag=saved.eTag||(await appStateMetadata()).eTag;appSync.dirty=appRevision!==revision;saveSyncMeta();appSyncStatus=appSync.dirty?'Alterações locais aguardando sincronização':'Sincronizado com o OneDrive';if(appSync.dirty)appSaveTimer=setTimeout(()=>saveAppState().catch(appSyncError),3500)
+  const payload={...appStateData(),savedAt:new Date().toISOString()};appSync.pendingSignature=appStateSignature(payload);saveSyncMeta();const saved=await authorizedWrite(current?'/me/drive/items/'+encodeURIComponent(current.id)+'/content':prefix+APP_STATE_FILE+':/content',JSON.stringify(payload),current?.eTag||null);appRemote={item:saved,value:payload};appSync.etag=saved.eTag||(await appStateMetadata()).eTag;appSync.dirty=appRevision!==revision;delete appSync.pendingSignature;saveSyncMeta();appSyncStatus=appSync.dirty?'Alterações locais aguardando sincronização':'Sincronizado com o OneDrive';if(appSync.dirty)appSaveTimer=setTimeout(()=>saveAppState().catch(appSyncError),3500)
  })().finally(()=>{appSyncTask=null});return appSyncTask;
 }
 async function connectAppState(){if(appSyncTask)return appSyncTask;try{await readAppState({force:true})}catch(e){appSyncError(e)}}
