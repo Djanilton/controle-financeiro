@@ -1,0 +1,6 @@
+const test=require('node:test'),assert=require('node:assert/strict'),R=require('../base-reconciliation.js');
+const tx=(id,amount=10)=>({id,description:'Previsão',date:'2030-01-01',kind:'Despesa',amount});
+test('IDs divergentes não duplicam previsão equivalente',()=>{const r=R.compare({transactions:[tx('a')]},{transactions:[tx('b')]});assert.equal(r.differences.length,1);assert.equal(R.consolidate(r,{[r.differences[0].id]:'local'}).transactions.length,1)});
+test('vínculo remoto identifica alteração de descrição',()=>{const a={...tx('a'),minhasFinancas:{remoteId:'r',profileId:'p',occurrenceMonth:'2030-01'}},b={...a,id:'b',description:'Nova'};assert.equal(R.compare([a],[b]).differences.length,1)});
+test('ambiguidades bloqueiam proposta',()=>{const r=R.compare([tx('a')],[tx('b'),tx('c')]);assert.throws(()=>R.consolidate(r,{}),/ambíguas/)});
+test('exclusões e campos divergentes exigem decisão; preserva desconhecidos',()=>{const r=R.compare({rows:[tx('a')],private:{history:[1]}},{rows:[],private:{history:[1]}});assert.throws(()=>R.consolidate(r,{}));const choices=Object.fromEntries(r.differences.map(d=>[d.id,'local']));assert.deepEqual(R.consolidate(r,choices),{rows:[tx('a')],private:{history:[1]}})});
