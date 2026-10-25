@@ -11,3 +11,5 @@ body.sidebar-compact .sidebar .brand,body.sidebar-compact .privacy-note,body.sid
 body.sidebar-compact .nav-button{justify-content:center;gap:0;padding:10px 0;min-height:44px}
 .topbar>div:first-of-type{min-width:0;flex:1}
 @media(max-width:720px){.sidebar{width:var(--sidebar-width)}.shell{margin-left:var(--sidebar-width)}body:not(.sidebar-compact){--sidebar-width:min(248px,64vw)}.sidebar .brand{padding:0 4px 16px;gap:6px}.sidebar .brand-mark{flex:none}.sidebar .brand strong{font-size:12px}.sidebar .brand small{font-size:10px}.nav-button{padding:10px 7px;font-size:12px}.privacy-note{padding:8px;font-size:10px}.topbar{gap:8px}.topbar h1{overflow-wrap:anywhere}}
+
+@media(max-width:720px){body:not(.sidebar-compact){--sidebar-width:64px}.sidebar .brand,.sidebar .privacy-note,.sidebar .nav-label{display:none}.sidebar .nav-button{justify-content:center;padding:10px 0;gap:0}.shell .card{min-width:0;overflow-wrap:anywhere}}
