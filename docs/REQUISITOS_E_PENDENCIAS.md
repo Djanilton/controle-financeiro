@@ -239,3 +239,10 @@ PR: https://github.com/Djanilton/controle-financeiro/pull/3. Commit inicial `bf9
 - Testes: regressão Node **221 aprovados, zero falhas**; Chromium Configurações aprovado com novas asserções; smoke local de dez abas aprovado. Resultados anteriores de cinco scripts preservados; não foram todos repetidos nesta continuação.
 - Revisão do diff: apenas estado/sincronização, CSS de navegação, testes sintéticos e requisitos; nenhum motor financeiro, arquivo privado ou credencial adicionado. `git diff --check` aprovado. CI inicial do commit bf9866f: zero check-runs; workflow existente publica apenas em push na main ou acionamento manual, não executado nesta branch.
 - Base real/Transport closed: permanece sem diagnóstico causal, sem tentativa de modificar a base real. Procedimento seguro e limites da seção anterior continuam válidos. Escrita Minhas Finanças não iniciada. PR deve permanecer aberto para revisão.
+
+### Revisão final PR #3 — 25/10/2026
+
+- CI adicionado em `.github/workflows/ci.yml`: pull requests para main, Node 24/Python 3.12, regressão completa e três scripts Playwright com Chromium e dados sintéticos; permissões somente de leitura, sem deploy ou autenticação real.
+- `app-state.js`: falhas de localStorage/IndexedDB geram aviso explícito de possível perda ao fechar e proteção beforeunload. Aviso permanece mesmo diante de outros erros de sincronização. Falha persistente continua impedindo garantir durabilidade; exportação privada é necessária antes de fechar.
+- Resposta de PUT sem ETag não pode mais adotar ETag de uma consulta posterior (que poderia pertencer a outra sessão): mantém envio incerto/pendente e exige releitura. Testes cobrem ausência de confirmação falsa e falha de localStorage. Histórico e requisitos anteriores preservados; motor não alterado.
+- Regressão local final: 223 testes aprovados, zero falhas. Navegador: Configurações, sessões da construção e Minhas Finanças executados com dados sintéticos; resultados do CI registrados no PR/checks. Sem validação de base real ou resolução causal de Transport closed. Sem merge ou deploy.

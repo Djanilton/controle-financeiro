@@ -1,0 +1,31 @@
+name: Validar Pull Request
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Regressão Node e validador independente
+        run: node --test --test-isolation=none tests/*.test.cjs
+      - name: Instalar navegador isolado
+        run: |
+          npm install --prefix /tmp/ci-browser playwright@1.56.1
+          /tmp/ci-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Navegador com dados sintéticos
+        env:
+          PLAYWRIGHT_MODULE: /tmp/ci-browser/node_modules/playwright
+        run: |
+          node tests/browser-settings.cjs
+          node tests/browser-construction-sessions.cjs
+          node tests/browser-minhas-financas.cjs

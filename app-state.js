@@ -4,12 +4,15 @@ const APP_STATE_FILE='controle-financeiro-app.json',APP_SYNC_KEY='controle-finan
 let appSync=loadJson(APP_SYNC_KEY,{etag:'',dirty:false}),appRemote=null,appSyncTask=null,appSaveTimer,appReady=false,appLoading=false,appBackupMade=false,appRevision=0,appLastCheck=0,appSignature='',appSyncStatus='Dados deste dispositivo';
 function appStateData(){const result={...data};for(const key of ['constructionSnapshot','constructionStatus','constructionImportedAt','constructionItemId','constructionEtag','financingConfig','constructionSyncError','financialBridgeError'])delete result[key];return {schema:1,data:result,manual:structuredClone(manual)}}
 function appStateSignature(value=appStateData()){return JSON.stringify({data:value.data,manual:value.manual})}
-function saveSyncMeta(){localStorage.setItem(APP_SYNC_KEY,JSON.stringify(appSync))}
+let appStorageUnsafe=false;
+function appStorageFailure(error){appStorageUnsafe=true;appSyncStatus='Falha no armazenamento local. Alterações podem ser perdidas ao fechar o navegador. Exporte uma cópia antes de fechar.';toast(appSyncStatus);return error}
+function saveSyncMeta(){try{localStorage.setItem(APP_SYNC_KEY,JSON.stringify(appSync))}catch(error){throw appStorageFailure(error)}}
+addEventListener('beforeunload',event=>{if(appStorageUnsafe){event.preventDefault();event.returnValue=''}});
 function hasAppData(){return !!(data.transactions?.length||data.sources?.length||data.payroll?.baseline?.length||data.payroll?.documents?.length||manual.transactions?.length)}
 function appChanged(){if(!appReady||appLoading)return;const signature=appStateSignature();if(signature===appSignature)return;appSignature=signature;appRevision++;appSync.dirty=true;saveSyncMeta();clearTimeout(appSaveTimer);if(user)appSaveTimer=setTimeout(()=>saveAppState().catch(appSyncError),3500)}
-function appSyncError(e){const status=e.message||String(e);if(appSyncStatus!==status){appSyncStatus=status;toast(status)}}
-const appDbBefore=dbSet;dbSet=async function(key,value){if(key==='main')appChanged();await appDbBefore(key,value)};
-const appManualBefore=saveManual;saveManual=function(){appManualBefore();appChanged()};
+function appSyncError(e){if(appStorageUnsafe){toast(appSyncStatus);return}const status=e.message||String(e);if(appSyncStatus!==status){appSyncStatus=status;toast(status)}}
+const appDbBefore=dbSet;dbSet=async function(key,value){if(key==='main')appChanged();try{await appDbBefore(key,value)}catch(error){throw appStorageFailure(error)}};
+const appManualBefore=saveManual;saveManual=function(){try{appManualBefore();appChanged()}catch(error){throw appStorageFailure(error)}};
 const sourcesWorkbookBefore=importOneDriveWorkbook;importOneDriveWorkbook=async function(event){if(!event)return;return sourcesWorkbookBefore()};
 async function appStateMetadata(){try{return await (await graph('/me/drive/root:/'+graphPath(CONSTRUCTION_FOLDER+'/'+APP_STATE_FILE),{silent:true})).json()}catch(e){if(e.message.includes('404'))return null;throw e}}
 function validateAppState(value){if(![undefined,1].includes(value?.schema)||!value?.data||!Array.isArray(value.data.transactions)||!Array.isArray(value.data.sources)||!value.manual||!Array.isArray(value.manual.transactions))throw Error('Base privada do aplicativo inválida. Os dados deste dispositivo foram preservados.');return {...value,schema:1}}
@@ -32,7 +35,7 @@ async function saveAppState(){
  appSyncTask=(async()=>{const revision=appRevision,current=await appStateMetadata();if((current?.eTag||'')!==(appSync.etag||''))throw Error('Outra sessão alterou a base. Suas alterações locais foram preservadas; confira em Configurações.');
   const folder=await constructionFolder(),prefix='/me/drive/items/'+encodeURIComponent(folder.id)+':/';
   if(current&&!appBackupMade){const old=appRemote?.value||await(await graph('/me/drive/items/'+encodeURIComponent(current.id)+'/content',{silent:true})).json();await authorizedWrite(prefix+'controle-financeiro-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json:/content',JSON.stringify(old));appBackupMade=true}
-  const payload={...appStateData(),savedAt:new Date().toISOString()};appSync.pendingSignature=appStateSignature(payload);saveSyncMeta();const saved=await authorizedWrite(current?'/me/drive/items/'+encodeURIComponent(current.id)+'/content':prefix+APP_STATE_FILE+':/content',JSON.stringify(payload),current?.eTag||null);appRemote={item:saved,value:payload};appSync.etag=saved.eTag||(await appStateMetadata()).eTag;appSync.dirty=appRevision!==revision;delete appSync.pendingSignature;saveSyncMeta();appSyncStatus=appSync.dirty?'Alterações locais aguardando sincronização':'Sincronizado com o OneDrive';if(appSync.dirty)appSaveTimer=setTimeout(()=>saveAppState().catch(appSyncError),3500)
+  const payload={...appStateData(),savedAt:new Date().toISOString()};appSync.pendingSignature=appStateSignature(payload);saveSyncMeta();const saved=await authorizedWrite(current?'/me/drive/items/'+encodeURIComponent(current.id)+'/content':prefix+APP_STATE_FILE+':/content',JSON.stringify(payload),current?.eTag||null);appRemote={item:saved,value:payload};if(!saved.eTag)throw Error('Envio sem ETag confirmado. Resultado incerto; confira a versão da nuvem antes de repetir.');appSync.etag=saved.eTag;appSync.dirty=appRevision!==revision;delete appSync.pendingSignature;saveSyncMeta();appSyncStatus=appSync.dirty?'Alterações locais aguardando sincronização':'Sincronizado com o OneDrive';if(appSync.dirty)appSaveTimer=setTimeout(()=>saveAppState().catch(appSyncError),3500)
  })().finally(()=>{appSyncTask=null});return appSyncTask;
 }
 async function connectAppState(){if(appSyncTask)return appSyncTask;try{await readAppState({force:true})}catch(e){appSyncError(e)}}
