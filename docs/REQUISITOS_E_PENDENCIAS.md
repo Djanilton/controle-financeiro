@@ -248,3 +248,63 @@ PR: https://github.com/Djanilton/controle-financeiro/pull/3. Commit inicial `bf9
 - Regressão local final: 223 testes aprovados, zero falhas. Navegador: Configurações, sessões da construção e Minhas Finanças executados com dados sintéticos; resultados do CI registrados no PR/checks. Sem validação de base real ou resolução causal de Transport closed. Sem merge ou deploy.
 
 **CI remoto comprovado:** commit `fd14c09`, workflow https://github.com/Djanilton/controle-financeiro/actions/runs/40218044926 concluído com **success**, incluindo regressão Node/validador independente, instalação Chromium e três scripts sintéticos de navegador. A atualização documental posterior apenas registra essa evidência. PR #3 permanece aberto; autorização de merge ainda necessária.
+
+### Publicação autorizada do PR #3 — 25/10/2026 (registro local)
+
+- Antes do merge: HEAD confirmado em `3bb8ed0d795f284bfd8207f517d2e87441c408aa`, check `tests` concluído com sucesso; diff com os sete arquivos esperados e `git diff --check` sem erros. Nenhum arquivo financeiro privado ou credencial incluído.
+- PR #3 integrado por squash à main no commit `c3238ab906b69bdf5a60054214e2ba8d9ac39c47`.
+- GitHub Pages: https://github.com/Djanilton/controle-financeiro/actions/runs/40218685967 concluído com **success**; checkout, upload de artefato e deploy aprovados. O `head_sha` do workflow corresponde ao commit integrado. Isso confirma a origem do artefato, sem afirmar comparação dos bytes servidos publicamente.
+- Verificação pública não destrutiva: tentativa HTTP HEAD para https://djanilton.github.io/controle-financeiro/ bloqueada pelo proxy do ambiente (403 no CONNECT). Carregamento, navegação e bytes da versão servida não puderam ser verificados daqui após o deploy. Testes locais/CI anteriores não substituem essa conferência pública.
+- Permanecem pendentes: validação com base financeira real, OAuth real, causa histórica de Transport closed e recuperação após fechamento quando armazenamento local está indisponível. Nenhum dado real foi alterado. Próxima prioridade recomendada: conferência pública em navegador autorizado e validação controlada da base privada, mantendo backups e sem escrita remota não autorizada.
+- Este registro fica **somente local**, conforme solicitação de não provocar nova publicação apenas para documentar. A documentação do GitHub contém a revisão pré-merge; incorporar este registro na próxima alteração autorizada. Nenhuma nova implementação iniciada.
+
+### Validação pós-publicação em leitura — 25/10/2026
+
+Main remota consultada por fetch, permanece em `c3238ab906b69bdf5a60054214e2ba8d9ac39c47`. Registro local anterior da publicação preservado. Esta execução altera somente documentação local, sem commit/push/publicação.
+
+| Verificação | Resultado comprovado e limite |
+|---|---|
+| Endereço público | Requisição HTTP novamente bloqueada pelo proxy (403 no CONNECT); não se conclui falha do Pages. Bytes servidos e navegação pública não conferidos. |
+| Mesmo commit em HTTP local/Chromium 154 | Inicialização e dez abas: Painel, Transações, Despesas, Resumo saldo diário, Investimentos, Empréstimos, Contracheques, Construção, Balanço Patrimonial e Configurações navegáveis; filtro aceita texto sintético; zero erros JS/console. Desktop sem overflow; Configurações em 390 px apresenta scrollWidth 390. Perfil isolado, rede externa bloqueada, sem autenticação real. |
+| Regressão | 223 testes Node aprovados, zero falhas, incluindo validador independente financeiro. Não houve nova conferência numérica de dados reais ou de planilha privada. |
+| Base privada | Busca autorizada do conector encontrou o arquivo no caminho esperado, com aproximadamente 15,6 MB. Fetch dos bytes, somente leitura, reproduziu `Transport closed`. Conteúdo não obtido; não foi possível criar backup local do arquivo, conferir IDs/contagens/saldos nem integrar patrimônio real. Nenhuma escrita OneDrive realizada. |
+| Autenticação/permissões | Código usa MSAL para conta pessoal, User.Read/Files.Read na leitura; Files.ReadWrite em autorização separada para escrita. Caminho financeiro deriva da pasta fixa `Aplicativos/Minha Obra`; metadados e conteúdo são consultados por Graph. Busca pelo conector comprova acesso à pesquisa, não valida token/OAuth do site nem ETag do arquivo. ETag real não obtido. |
+| Transport closed | Reproduzido no fetch do conector, fora da execução do JavaScript do aplicativo. Não há status HTTP do Graph nem conteúdo para atribuir causa exclusiva a conector, rede ou Graph. Tamanho do arquivo é dado de diagnóstico, não causa demonstrada. Código simula erro e preserva dados; isso não comprova compatibilidade com esta base real. |
+
+**Procedimento seguro posterior, sem exposição pública:**
+1. No OneDrive autenticado, localizar o arquivo da base e usar **Baixar** para salvar uma cópia em pasta privada local, sem mover, renomear ou editar o original. Não enviar a cópia, tokens ou IDs a repositórios, issues ou screenshots públicos.
+2. Para diagnóstico do Graph, usar ferramenta oficial autenticada (por exemplo Graph Explorer) apenas com operações **GET**, escopo de leitura: consultar metadados do caminho, registrar privadamente tamanho/ETag/data e baixar `/content`. Não executar PUT/PATCH/POST/DELETE nem conceder permissões de escrita para esta conferência. Comparar o arquivo baixado com a cópia privada e confirmar JSON válido, schema e listas data.transactions/data.sources/manual.transactions.
+3. Registrar somente resultados agregados: contagens e IDs únicos, duplicações/vínculos de transferências, saldos por conta/data contra relatórios, separação previsto/realizado e contas elegíveis da reserva. Comparar premissas/cenário da construção com a referência vigente, em leitura. Não usar valores históricos fixos para corrigir diferenças.
+4. Não usar **Autorizar e sincronizar** nem conectar uma cópia de teste com alterações pendentes: a inicialização pode tentar salvar automaticamente, inclusive se a base não existir. Para ensaio do aplicativo com cópia privada, exigir ambiente isolado com escritas remotas bloqueadas antes da autenticação e backup confirmado. A validação OAuth real no aplicativo continua pendente até esse controle estar garantido.
+
+**Prioridade:** obter download privado íntegro em leitura e conferir dados antes de qualquer gravação; em seguida validar OAuth em ambiente que bloqueie escrita. Nenhuma correção funcional aplicada nesta auditoria. Mantidos os limites de armazenamento indisponível, base real e conferência pública.
+
+Testes de navegador adicionais desta execução: `browser-settings.cjs`, `browser-construction-migration.cjs` e `browser-minhas-financas.cjs` concluídos com sucesso; cobrem importações/configurações, campos/IDs/anexos simulados da construção, download Excel e conciliação de pacote sintético. Não abrangem abertura de anexos reais ou login Microsoft real.
+
+### Investigação de download / Transport closed — 25/10/2026
+
+Branch local `fix/download-base-financeira`, criada sobre main `c3238ab`, preservando os registros documentais locais anteriores. Sem commit, push, merge ou deploy.
+
+**Causa demonstrada no aplicativo:** `app-state.js` utilizava `graph(.../content)`, que acrescenta Authorization. A documentação oficial afirma que `/content` responde 302 e recomenda, para JavaScript com preflight CORS, obter `@microsoft.graph.downloadUrl` e baixar diretamente sem Authorization. Fonte consultada: https://github.com/microsoftgraph/microsoft-graph-docs-contrib/blob/main/api-reference/v1.0/api/driveitem-get-content.md (a página learn.microsoft.com foi bloqueada pelo proxy). Isso comprova inadequação ao fluxo recomendado, não uma falha CORS real observada no OAuth deste usuário.
+
+**Correção implementada:** `downloadAppState` em `app-state.js` usa a URL HTTPS temporária recebida dos metadados, imediatamente e sem persistir/logar essa URL, sem cabeçalhos de autenticação, com credentials omit e referrer omitido. Timeout de 120 segundos cobre download e leitura do corpo; não há repetição automática nem retomada por Range. Respostas diferentes de 200 (inclusive 206) são recusadas; quando size está presente, exige tamanho exato; JSON deve ser integral e válido. Metadados são relidos após transferência e ID/ETag precisam coincidir antes de aplicar. Leitura para backup sem cache também usa o helper. Preservadas as verificações de alterações locais, backups e conflitos.
+
+**Autenticação/expiração:** token de leitura continua restrito à consulta Graph; a URL pré-autenticada é uma credencial temporária e nunca recebe o Bearer Microsoft. URLs podem expirar em minutos segundo a documentação; 401/403 exigem nova consulta, sem fallback para `/content` ou retry silencioso. CORS da origem de download e latência real não foram medidos. Timeout é limite operacional explícito, não garantia de transferência de qualquer tamanho/rede.
+
+**Testes realmente executados:** regressão completa `node --test --test-isolation=none tests/*.test.cjs`: **228 aprovados, zero falhas**. `tests/app-state.test.cjs` acrescenta transferência sintética de 16 MiB sem Authorization, interrupção da leitura do corpo, JSON truncado, HTTP 403 de URL expirada e alteração de ETag; falhas preservam dados locais e não provocam escritas. Chromium `browser-settings.cjs` aprovado com autenticação/Graph simulados. Os testes de corpo interrompido são mocks; não representam medição de conexão Microsoft real nem demonstram a causa do conector. `git diff --check` aprovado.
+
+**Separação de problemas:** o `Transport closed` histórico foi reproduzido no fetch da ferramenta SharePoint, fora do JavaScript do aplicativo. Não houve acesso a status HTTP, stack interna ou corpo dessa ferramenta. Sua causa efetiva continua **bloqueada/não determinada**; nenhum reparo do conector foi tentado. A mudança local não permite alegar resolução do erro do ChatGPT, download da base real, OAuth real ou saldos validados. Base privada não lida/modificada nesta etapa.
+
+**Pendências:** validar downloadUrl/CORS e tempos em navegador autorizado com escritas remotas bloqueadas; confirmar ETag e integridade de cópia privada antes de reconciliar saldos. Necessário testar timeout e interrupção de socket em navegador/servidor controlado além dos mocks. Correção local ainda não publicada e GitHub não reflete esta branch. Motor financeiro e dados reais não alterados.
+
+### Revisão de segurança do download — 25/10/2026
+
+Branch `fix/download-base-financeira`, push e PR autorizados pelo usuário; merge/deploy não autorizados. Inclui registros locais pós-publicação e auditoria em leitura anteriormente preservados.
+
+- URL pré-autenticada não é escrita em logs, interface ou armazenamento persistente pelo helper; requisição usa somente o destino recebido do Graph, sem Authorization/cookies/referrer. Metadados com URL permanecem apenas em memória; a URL é sensível e aparece necessariamente nas ferramentas de rede do próprio navegador. Não compartilhar capturas de rede.
+- Erros nativos de fetch/JSON e URL inválida agora são substituídos por mensagens controladas, evitando exposição acidental de endereço assinado ou fragmentos privados. Não há envio da URL para telemetria/serviços auxiliares pelo código alterado.
+- Timeout de 120 segundos, status 200, tamanho quando informado, JSON/schema íntegros e ID/ETag após transferência continuam obrigatórios. Nova consulta explícita permite recuperar expiração; conteúdo alterado bloqueia aplicação. Sem fallback autenticado para /content e sem retries automáticos.
+- Regressão final local: **231 testes Node aprovados, zero falhas**, incluindo timeout, erro sem exposição de URL, recuperação após 403, JSON grande/truncado, interrupção e mudança de ETag. Chromium: configurações, sessões da construção e Minhas Finanças com dados sintéticos. Evidências remotas serão os checks do PR; resultados locais não substituem CI.
+- Limites preservados: origem histórica do Transport closed do conector ChatGPT não determinada, OAuth/CORS/latência reais e base financeira real não validados. Mocks não reproduzem implementação interna do conector. Motor e dados reais não alterados. Verificação de socket/CORS real e procedimento privado continuam pendentes.
+
+**CI comprovado do PR #4:** commit `9b55db0889055552b5b7755ef950694a63b6dbda`, execução https://github.com/Djanilton/controle-financeiro/actions/runs/40221585138 aprovada; regressão Node/validador independente e Chromium sintético concluídos com sucesso. PR https://github.com/Djanilton/controle-financeiro/pull/4 aberto, sem merge/deploy. Aprovação técnica limitada aos cenários automatizados; validação real permanece pendente.

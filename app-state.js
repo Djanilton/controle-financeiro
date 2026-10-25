@@ -15,6 +15,23 @@ const appDbBefore=dbSet;dbSet=async function(key,value){if(key==='main')appChang
 const appManualBefore=saveManual;saveManual=function(){try{appManualBefore();appChanged()}catch(error){throw appStorageFailure(error)}};
 const sourcesWorkbookBefore=importOneDriveWorkbook;importOneDriveWorkbook=async function(event){if(!event)return;return sourcesWorkbookBefore()};
 async function appStateMetadata(){try{return await (await graph('/me/drive/root:/'+graphPath(CONSTRUCTION_FOLDER+'/'+APP_STATE_FILE),{silent:true})).json()}catch(e){if(e.message.includes('404'))return null;throw e}}
+async function downloadAppState(item){
+ const safeError=message=>Object.assign(new Error(message),{appDownloadSafe:true});
+ const url=item['@microsoft.graph.downloadUrl'];
+ let validUrl=false;try{validUrl=new URL(url).protocol==='https:'}catch{}
+ if(!url||!validUrl)throw safeError('URL de leitura da base indisponível. Consulte novamente os metadados do OneDrive.');
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),120000);
+ try{
+  const response=await fetch(url,{signal:controller.signal,credentials:'omit',referrerPolicy:'no-referrer'});
+  if(response.status!==200)throw safeError('Download da base não concluído (HTTP '+response.status+'). Consulte novamente o OneDrive; a URL pode ter expirado.');
+  const bytes=await response.arrayBuffer();
+  if(Number.isFinite(item.size)&&bytes.byteLength!==item.size)throw safeError('Download incompleto da base. Os dados locais foram preservados.');
+  const value=validateAppState(JSON.parse(new TextDecoder().decode(bytes)));
+  const latest=await appStateMetadata();
+  if(!item.eTag||latest?.id!==item.id||latest?.eTag!==item.eTag)throw safeError('A base mudou durante o download. Confira a versão da nuvem antes de continuar.');
+  return value;
+ }catch(error){if(error.name==='AbortError')throw safeError('Tempo de leitura da base excedido. Os dados locais foram preservados.');if(error.appDownloadSafe)throw error;throw safeError('Falha ao transferir ou interpretar a base. Os dados locais foram preservados; consulte novamente o OneDrive.')}finally{clearTimeout(timer)}
+}
 function validateAppState(value){if(![undefined,1].includes(value?.schema)||!value?.data||!Array.isArray(value.data.transactions)||!Array.isArray(value.data.sources)||!value.manual||!Array.isArray(value.manual.transactions))throw Error('Base privada do aplicativo inválida. Os dados deste dispositivo foram preservados.');return {...value,schema:1}}
 async function readAppState({force=false}={}){
  await readyAuth();if(!user)return false;if(!force&&Date.now()-appLastCheck<60000&&appRemote)return false;
@@ -23,7 +40,7 @@ async function readAppState({force=false}={}){
  if(item.eTag===appSync.etag&&appRemote){if(appSync.dirty)await saveAppState();return false}
 
  const readSignature=appStateSignature();
- const value=validateAppState(await(await graph('/me/drive/items/'+encodeURIComponent(item.id)+'/content',{silent:true})).json());
+ const value=await downloadAppState(item);
  if(appStateSignature()!==readSignature)throw Error('Os dados locais mudaram durante a leitura da nuvem. Suas alterações foram preservadas; tente sincronizar novamente.');
  if(appSync.dirty&&appSync.etag!==item.eTag){if(!appSync.pendingSignature||appStateSignature(value)!==appSync.pendingSignature)throw Error('Há alterações neste dispositivo e outra versão na nuvem. Abra Configurações para conferir as cópias.');appSync.etag=item.eTag;delete appSync.pendingSignature;saveSyncMeta()}
  appRemote={item,value};if(appSync.dirty){await saveAppState();return false}
@@ -34,7 +51,7 @@ async function saveAppState(){
  if(appSyncTask)return appSyncTask;
  appSyncTask=(async()=>{const revision=appRevision,current=await appStateMetadata();if((current?.eTag||'')!==(appSync.etag||''))throw Error('Outra sessão alterou a base. Suas alterações locais foram preservadas; confira em Configurações.');
   const folder=await constructionFolder(),prefix='/me/drive/items/'+encodeURIComponent(folder.id)+':/';
-  if(current&&!appBackupMade){const old=appRemote?.value||await(await graph('/me/drive/items/'+encodeURIComponent(current.id)+'/content',{silent:true})).json();await authorizedWrite(prefix+'controle-financeiro-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json:/content',JSON.stringify(old));appBackupMade=true}
+  if(current&&!appBackupMade){const old=appRemote?.value||await downloadAppState(current);await authorizedWrite(prefix+'controle-financeiro-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json:/content',JSON.stringify(old));appBackupMade=true}
   const payload={...appStateData(),savedAt:new Date().toISOString()};appSync.pendingSignature=appStateSignature(payload);saveSyncMeta();const saved=await authorizedWrite(current?'/me/drive/items/'+encodeURIComponent(current.id)+'/content':prefix+APP_STATE_FILE+':/content',JSON.stringify(payload),current?.eTag||null);appRemote={item:saved,value:payload};if(!saved.eTag)throw Error('Envio sem ETag confirmado. Resultado incerto; confira a versão da nuvem antes de repetir.');appSync.etag=saved.eTag;appSync.dirty=appRevision!==revision;delete appSync.pendingSignature;saveSyncMeta();appSyncStatus=appSync.dirty?'Alterações locais aguardando sincronização':'Sincronizado com o OneDrive';if(appSync.dirty)appSaveTimer=setTimeout(()=>saveAppState().catch(appSyncError),3500)
  })().finally(()=>{appSyncTask=null});return appSyncTask;
 }
