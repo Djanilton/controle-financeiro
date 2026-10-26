@@ -61,5 +61,5 @@ function preview(base,packet){packet=validate(packet);const expanded=expand(pack
  for(const t of base)if(t.minhasFinancas?.profileId===profile&&(t.dueDate||t.date)>=packet.from&&(t.dueDate||t.date)<=packet.to&&!incoming.has(t.minhasFinancas.key))conflicts.push({key:t.minhasFinancas.key,reason:'Transação antes importada ausente no relatório atual; exclusão não aplicada automaticamente.'});
  return {passed:!conflicts.length,rows:conflicts.length?clone(base):rows,conflicts,changes,count:packet.items.length,profileId:profile};
 }
-root.MinhasFinancasCore={SCHEMA,SCHEMAS:[SCHEMA,SOURCE_SCHEMA],validate,preview,signature};if(typeof module!=='undefined')module.exports=root.MinhasFinancasCore;
+root.MinhasFinancasCore={SCHEMA,SCHEMAS:[SCHEMA,SOURCE_SCHEMA],validate,preview,signature,hasLocalChanges:t=>!!(t?.minhasFinancas?.localVersion&&editableSignature(t)!==t.minhasFinancas.localVersion||t?.minhasFinancas?.lastSignature&&signature(t)!==t.minhasFinancas.lastSignature)};if(typeof module!=='undefined')module.exports=root.MinhasFinancasCore;
 })(typeof globalThis!=='undefined'?globalThis:this);
