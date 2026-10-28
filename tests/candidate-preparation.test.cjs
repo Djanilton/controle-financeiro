@@ -75,3 +75,52 @@ test('revisão não aceita contagens/totais injetáveis ou estruturas incompleta
   const value=JSON.parse(JSON.stringify({schema:'candidate-review-v1',sourceSignature:signature,preview:p}));mutate(value);assert.throws(()=>C.recoverReview(value,signature),/Formato/);
  }
 });
+
+test('corte e seleção usam somente vencimento, inclusive parcela antiga e pagamento antecipado',()=>{
+ const excel=sources([row({'Descrição':'Compra antiga 8/12','Recorrência':'Parcelada','Lançamento':'2025-01-01','Efetivação':'2026-09-20','Situação':'Efetivada'})]);
+ const b=base(),a=C.preview(b,options({excel}));assert.ok(a.passed);const old=a.candidate.data.transactions[0],id=old.id;
+ const changed=sources([row({'Descrição':'Compra antiga 8/12','Recorrência':'Parcelada','Valor':15,'Lançamento':'2025-01-01','Efetivação':'2026-09-20','Situação':'Efetivada'})]);
+ const next=C.preview(a.candidate,options({excel:changed}));assert.ok(next.passed);assert.equal(next.candidate.data.transactions[0].id,id);assert.equal(next.candidate.data.transactions[0].amount,15);assert.equal(next.candidate.data.transactions[0].paymentDate,'2026-09-20');
+ assert.deepEqual(C.preview(next.candidate,options({excel:changed})).candidate,next.candidate);
+ const historical={...old,id:'historic-due',dueDate:'2026-09-30',date:'2026-11-01',paymentDate:'2026-11-01'};
+ const withHistory=structuredClone(next.candidate);withHistory.data.transactions.push(historical);
+ assert.ok(C.preview(withHistory,options({excel:changed})).candidate.data.transactions.some(t=>t.id==='historic-due'));
+});
+test('padrão são doze meses do mês de referência; histórico anterior é opt-in pelo período',()=>{
+ assert.deepEqual(C.window12('2027-02-18'),{from:'2027-02-01',to:'2028-01-31',dateReference:'due'});
+ const r=C.preview(base(),options({asOf:'2027-02-18',excel:sources()}));assert.equal(r.window.from,'2027-02-01');assert.equal(r.window.to,'2028-01-31');assert.equal(r.candidate.data.transactions.length,0);
+ const prior=C.preview(base(),options({asOf:'2027-02-18',excel:sources(),period:{from:'2026-10-01',to:'2026-10-31'}}));assert.equal(prior.candidate.data.transactions.length,3);
+ assert.throws(()=>C.preview(base(),options({excel:sources(),period:{from:'2026-09-30',to:'2026-10-31'}})));
+});
+test('Excel vincula a identidade remota inequívoca e preserva ID nas mudanças posteriores de valor',()=>{
+ const b=C.preview(base(),options({excel:sources()})).candidate,local=b.data.transactions[0].id;
+ const p=packet();p.items[0].seriesId='synthetic-series';
+ const r=C.preview(b,options({packet:p}));assert.ok(r.passed);const linked=r.candidate.data.transactions[0];
+ assert.equal(linked.id,local);assert.equal(linked.minhasFinancas.profileId,'synthetic');assert.equal(linked.minhasFinancas.remoteId,'remote-synthetic');assert.equal(linked.minhasFinancas.occurrenceMonth,'2026-10');assert.equal(linked.minhasFinancas.seriesId,'synthetic-series');
+ const changed=packet();changed.items[0].presentationAmount=15;changed.details[0].transaction.amount=15;changed.totals.expenses.total=15;
+ const next=C.preview(r.candidate,options({packet:changed}));assert.ok(next.passed);assert.equal(next.candidate.data.transactions[0].id,local);assert.equal(next.candidate.data.transactions[0].amount,15);assert.equal(next.candidate.data.transactions[0].minhasFinancas.seriesId,'synthetic-series');
+ assert.deepEqual(C.preview(next.candidate,options({packet:changed})).candidate,next.candidate);
+});
+test('vínculo retroativo não presume igualdade quando valor/cartão/parcela divergem',()=>{
+ const b=C.preview(base(),options({excel:sources()})).candidate;
+ for(const mutate of [p=>{p.items[0].presentationAmount=20;p.details[0].transaction.amount=20;p.totals.expenses.total=20},p=>p.items[0].card={description:'Outro cartão'},p=>{p.details[0].transaction.installmentsCount=12;p.details[0].transaction.installmentNumber=2}]){
+  const p=packet();mutate(p);const r=C.preview(b,options({packet:p}));assert.equal(r.passed,false);assert.deepEqual(r.candidate,b);
+ }
+});
+test('dois candidatos Excel ou nova identidade remota ambígua bloqueiam associação',()=>{
+ const b=C.preview(base(),options({excel:sources()})).candidate;b.data.transactions.push({...b.data.transactions[0],id:'duplicate-synthetic'});
+ const r=C.preview(b,options({packet:packet()}));assert.equal(r.passed,false);assert.deepEqual(r.candidate,b);
+ const first=C.preview(base(),options({packet:packet()})).candidate,p=packet();p.items[0].id=p.details[0].transaction.id='other-remote';
+ assert.equal(C.preview(first,options({packet:p})).passed,false);
+});
+test('situação desconhecida das transferências não presume pagamento durante atualização',()=>{
+ const excel=sources();excel[2].transactions[0].status='Não informado';excel[2].transactions[0].paymentDate='';excel[2].transactions[0].effectiveDateKnown=false;
+ const a=C.preview(base(),options({excel}));const b=C.preview(a.candidate,options({excel}));assert.ok(b.passed);const t=b.candidate.data.transactions.find(t=>t.kind==='Transferência');assert.equal(t.status,'Não informado');assert.equal(t.paymentDate,'');assert.equal(t.effectiveDateKnown,false);
+});
+test('parcela numerada do Excel recebe ID remoto sem perder ID local ou gerar edição local falsa',()=>{
+ const excel=sources([row({'Descrição':'Compra antiga 8/12','Recorrência':'Parcelada','Lançamento':'2025-01-01'})]);
+ const b=C.preview(base(),options({excel})).candidate,id=b.data.transactions[0].id,p=packet();
+ p.items[0].description='Compra antiga';p.items[0].recurrence='M';p.details[0].transaction.installmentNumber=8;p.details[0].transaction.installmentsCount=12;p.details[0].transaction.createdAt='2025-01-01';
+ const r=C.preview(b,options({packet:p}));assert.ok(r.passed);assert.equal(r.candidate.data.transactions[0].id,id);assert.equal(r.candidate.data.transactions[0].installments,'8/12');
+ assert.equal(M.hasLocalChanges(r.candidate.data.transactions[0]),false);assert.deepEqual(C.preview(r.candidate,options({packet:p})).candidate,r.candidate);
+});

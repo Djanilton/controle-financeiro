@@ -50,6 +50,15 @@ function fromExcelBook(book,XLSX,name,control=null){
 function fromPacket(packet){
  check(!packet?.poc?.sampleOnly,'Pacote de amostra MCP não comprova cobertura para substituição.');
  const normalized=MF.preview([],packet);check(normalized.passed,'Pacote MCP contém conflitos de normalização.');
+ // Only retain an explicit series identifier; recurrence codes are never treated as IDs.
+ const original=MF.validate(packet),details=new Map(original.details.map(d=>[[String(d.transaction?.id),d.month].join('|'),d.transaction]));
+ const items=new Map(original.items.map(t=>[[String(t.id),t.occurrenceMonth||t.date.slice(0,7)].join('|'),t]));
+ for(const t of normalized.rows){
+  const m=t.minhasFinancas,key=[String(m.remoteId),m.occurrenceMonth].join('|'),raw=items.get(key),detail=details.get(key);
+  const ids=[raw?.seriesId,detail?.seriesId].filter(v=>v!=null);
+  check(ids.every(v=>typeof v==='string'&&v.length>0)&&new Set(ids).size<=1,'Identificador de série remoto inválido ou divergente.');
+  if(ids.length)m.seriesId=ids[0];
+ }
  return {schema:'candidate-source-v1',source:'plugin',transactions:normalized.rows,profileId:String(packet.profileId),
   from:packet.from,to:packet.to,dateReference:'due'};
 }

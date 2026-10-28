@@ -1,6 +1,6 @@
 # Requisitos e pendências — Controle Financeiro
 
-**Atualizado em:** 26/10/2026
+**Atualizado em:** 28/10/2026
 
 **Aplicação principal:** [Djanilton/controle-financeiro](https://github.com/Djanilton/controle-financeiro)
 
@@ -561,3 +561,22 @@ Seis scripts Chromium aprovados: browser-candidate-update (inclui geração, exp
 **Riscos para revisão antes do merge:** conferir gestão de origens legadas e identidade dos registros, proteção de vínculos, regras de cobertura e precedência Excel/pacote. Parsing XLSX, assinaturas, clonagem e exportação continuam consumindo memória; cenário sintético de volume não é SLA. Validação privada dos campos dos Excel não equivale a reconciliação de saldos ou base ativa. CORS e arquitetura da futura integração direta continuam pendentes. O merge na main pode disparar Pages; este PR não autoriza merge nem deploy. Workflow Pages permanece inalterado e limitado a push na main ou acionamento manual, que não foi solicitado.
 
 **Reexecução pré-publicação:** 288 testes Node aprovados, zero falhas (`node --test --test-isolation=none tests/*.test.cjs`), incluindo volume sintético de 30 mil transações, idempotência, vencimento, recorrências/parcelas, transferências, histórico, protegidos, duplicações, pacote e recuperação. Seis scripts Chromium aprovados nesta rodada, sem falhas: `browser-base-reconciliation`, `browser-reconciliation-performance`, `browser-settings`, `browser-construction-sessions` (três cenários), `browser-minhas-financas` e `browser-candidate-update`. A candidata foi gerada, exportada e reaberta mantendo assinatura ativa e bloqueio, sem escrita Graph após bloqueio; MCP direto permaneceu desabilitado. `git diff --check` aprovado antes do commit. Testes com navegador/Graph simulados não comprovam autenticação remota, Windows/Edge real ou atualização financeira real. CI remoto será acionado pelo PR; seus resultados devem ser conferidos separadamente.
+
+
+### PR #8 — revisão do vencimento e vínculos progressivos (28/10/2026)
+
+Branch `feat/atualizacao-candidata`, PR https://github.com/Djanilton/controle-financeiro/pull/8, revisão sobre `af42cb52a81d3e1bfbf4e566b40c428f609655af`. PR consultado aberto, rascunho, não mesclado; main em `6976eaa`. Esta seção substitui a regra temporal antiga registrada no histórico: **só dueDate seleciona período e protege vencimentos anteriores a 01/10/2026**. Lançamento/pagamento anterior não impede atualizar vencimento permitido. Manuais, alterações locais, projeções e vínculos protegidos continuam preservados. Nenhuma aplicação, exclusão da base ativa, escrita financeira, merge ou deploy.
+
+| Item | Estado / evidência | Pendência |
+|---|---|---|
+| Período e corte | **implementado / validado sinteticamente**: vencimento exclusivo; padrão 12 meses desde mês atual; histórico explícito respeitando corte | Conferência humana da seleção antes de qualquer carga real |
+| Atualização integral | **implementado**: substituição candidata apenas com fonte completa e controles conciliados; ausência em consulta incompleta não é exclusão | Cobertura/filtros não são comprovados criptograficamente; operador deve conferir |
+| Identidade progressiva | **implementado / validado sinteticamente**: perfil/ID/ocorrência/split, série explícita opcional, retrovínculo Excel inequívoco, ID local conservado em atualizações por identidade remota | Formato real de série e catálogos remotos não confirmados; divergências/duplicidades exigem revisão |
+| Parcelas, pagamentos e transferências | **validado sinteticamente**: parcela antiga com vencimento futuro, antecipação, valores atualizados, compras duplicadas, idempotência e situação desconhecida de transferências | Sem reconciliação de saldos, base ativa ou aceite Windows/Edge real |
+| Memória | **validado somente no ensaio local**: 30 mil linhas, substituição + recarga + roundtrip; 4,209 s, pico RSS 384.800 KiB (~376 MiB), Linux | Não é SLA nem pico do navegador; XLSX, assinaturas e cópias ainda custam memória |
+| Interface móvel / CI | **correção implementada**: largura limitada dos controles e fieldsets candidatos; assertions móveis mantidos | CI antigo 40308686800 falhou no assert mobile do browser-base-reconciliation após Node passar; acompanhar nova execução |
+| MCP direto no app | **bloqueado**: botão permanece desabilitado; somente pacote completo validado | Suporte informou PROFILE_LOCKED e recuperação por página oficial. PoC tratada fora deste PR; ainda depende de reteste autenticado real e CORS/arquitetura |
+
+Arquivos afetados: candidate-update.js, candidate-sources.js, candidate-update-ui.js, minhas-financas-core.js (parcela antes da assinatura local), styles.css, testes candidatos e documentação. PoC, ZIP, dados privados, artefatos de recuperação e checkout original não entram no commit. Bloqueio de conciliação não removido; candidata e reabertura continuam sem aplicação automática ou escrita OneDrive. Não há sincronização por diferenças.
+
+**Validação desta revisão:** 295 testes Node aprovados, zero falhas (`node --test --test-isolation=none tests/*.test.cjs`); regressões novas incluem pagamento antecipado, parcela lançada em ano anterior, corte exclusivo por vencimento, seleção histórica explícita, retrovínculo seguro com ID local, alteração de valor após vínculo remoto, cartão/parcela divergentes, duplicidade, parcela numerada e segunda carga sem falso conflito local. Seis scripts Chromium aprovados: base-reconciliation, reconciliation-performance, settings, construction-sessions (três cenários), minhas-financas e candidate-update. Padrão de datas e asserts de largura móvel mantidos e conferidos. `git diff --check` aprovado. Ensaios sintéticos; sem leitura/regravação da base privada, consulta MCP autenticada, aceite de perfil real ou alteração no bloqueio de conciliação. Primeira atualização real continua exigindo backups/ETag, conferência de cobertura, conflitos e autorização específica posterior.

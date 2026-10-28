@@ -8,18 +8,21 @@ function validDate(d){return typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&
 function period(p){if(!p||!validDate(p.from)||!validDate(p.to)||p.from<CUTOFF||p.to<p.from)throw Error('Período de vencimento inválido ou anterior ao corte.');return {from:p.from,to:p.to,dateReference:'due'}}
 function window12(asOf){if(!validDate(asOf))throw Error('Data de referência inválida.');return period({from:asOf.slice(0,7)+'-01',to:new Date(Date.UTC(Number(asOf.slice(0,4)),Number(asOf.slice(5,7))+11,0)).toISOString().slice(0,10)})}
 const projection=t=>t.recurringTemplate||t.isProjection||t.calculated||t.isCalculated||t.isFinancing||t.loanId||t.investmentId||t.constructionId||t.payrollId||t.fgtsId||t.origin==='projection';
-const protectedRow=t=>projection(t)||t.isManual||t.protected||t.manualOverride||MF.hasLocalChanges?.(t)||[t.dueDate,t.date,t.paymentDate].some(d=>d&&d<CUTOFF);
+const protectedRow=t=>projection(t)||t.isManual||t.protected||t.manualOverride||MF.hasLocalChanges?.(t)||(validDate(t.dueDate)&&t.dueDate<CUTOFF);
 const business=t=>JSON.stringify([t.kind,t.dueDate,Core.normalize(t.description),Core.normalize(t.account),Core.normalize(t.destination)]);
 const identity=t=>JSON.stringify([business(t),Math.round(Number(t.cashAmount??t.amount)*100),Core.normalize(t.card),Core.normalize(t.category),Core.normalize(t.subcategory),t.installments||'',t.recurrence||'',t.notes||'',t.tags||'']);
 const sourceId=value=>{let a=2166136261,b=2246822507;for(let i=0;i<value.length;i++){a=Math.imul(a^value.charCodeAt(i),16777619);b=Math.imul(b^value.charCodeAt(i),3266489909)}return (a>>>0).toString(16).padStart(8,'0')+(b>>>0).toString(16).padStart(8,'0')};
 const similar=t=>JSON.stringify([t.kind,t.dueDate,Core.normalize(t.account),Core.normalize(t.destination),Math.round(Number(t.cashAmount??t.amount)*100)]);
+// Cross-source links require equal financial identity; amount changes need an existing remote key.
+const linkBusiness=t=>{const text=String(t.description),suffix=text.match(/\s+(\d+)\s*\/\s*(\d+)\s*$/),number=String(t.installments||'').replace(/\s/g,'');return business({...t,description:suffix&&number===suffix[1]+'/'+suffix[2]?text.slice(0,suffix.index):text})};
+const linkIdentity=t=>JSON.stringify([linkBusiness(t),Math.round(Number(t.cashAmount??t.amount)*100),Core.normalize(t.card),t.installments||'']);
 const remote=t=>t.minhasFinancas?.key||null;
 const inside=(t,p)=>validDate(t.dueDate)&&t.dueDate>=p.from&&t.dueDate<=p.to;
 function totals(rows){const groups=new Map();for(const t of rows){if(projection(t)||!validDate(t.dueDate))continue;const key=JSON.stringify([t.dueDate.slice(0,7),t.kind,t.status||'Não informado']);if(!groups.has(key))groups.set(key,{month:t.dueDate.slice(0,7),kind:t.kind,status:t.status||'Não informado',count:0,totalMinor:0,unknownAmounts:0});const g=groups.get(key),amount=t.cashAmount??t.amount;g.count++;if(Number.isFinite(amount))g.totalMinor+=Math.round(amount*100);else g.unknownAmounts++}return [...groups.values()].sort((a,b)=>stable(a).localeCompare(stable(b)))}
 function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,includeLegacyPlanilha=false}={}){
  if(!base?.data||!Array.isArray(base.data.transactions)||!base.manual||!Array.isArray(base.manual.transactions))throw Error('Envelope de base inválido.');
  if(!excel.length&&!packet)throw Error('Selecione fonte completa para substituição.');
- const annual=window12(asOf),excelPeriod=period(selected||{from:CUTOFF,to:'2044-12-31'});if(excel.length&&excelPeriod.to>'2044-12-31')throw Error('Excel limitado a dezembro de 2044.');
+ const annual=window12(asOf),excelPeriod=period(selected||annual);if(excel.length&&excelPeriod.to>'2044-12-31')throw Error('Excel limitado a dezembro de 2044.');
  const p=packet?MF.validate(packet):null,profile=String(p?.profileId||coverage?.profileId||'');if(!profile)throw Error('Informe o perfil da fonte.');
  const previousProfile=base.data.candidateUpdate?.profileId||base.data.minhasFinancas?.profileId;if(previousProfile&&String(previousProfile)!==profile)throw Error('Perfil diferente da base gerenciada.');
  if(p){if(excel.length&&(excelPeriod.from>annual.from||excelPeriod.to<annual.to))throw Error('Janela do plugin deve caber no período Excel selecionado.');for(const page of packet.sourcePages||[]){const f=page.payload?.result?.data?.filters||{};if(f.status&&f.status!=='all'||f.type&&f.type!=='transactions'||['accountIds','originAccountIds','destinationAccountIds','cardIds','tagIds','expenseCategories','incomeCategories'].some(k=>f[k]?.length)||f.search||f.reportFilterId||f.transactionTypes&&stable([...f.transactionTypes].sort())!==stable(['expenses','incomes','transfers'].sort())||f.minValue!=null||f.maxValue!=null)throw Error('Consulta fonte contém filtros; substituição bloqueada.');}const c=packet.replacementCoverage;if(!c?.complete||c.dateReference!=='due'||c.status!=='all'||c.unfiltered!==true||String(c.profileId)!==profile||c.from!==annual.from||c.to!==annual.to||stable([...(c.types||[])].sort())!==stable(['expenses','incomes','transfers'].sort()))throw Error('Escopo completo sem filtros do plugin não comprovado.');if(p.from!==annual.from||p.to!==annual.to||p.dateReference!=='due'||!p.generatedAt||!Number.isFinite(Date.parse(p.generatedAt)))throw Error('Pacote deve cobrir os 12 meses completos por vencimento.');if(!excel.length&&selected&&(selected.from!==annual.from||selected.to!==annual.to))throw Error('Período plugin deve coincidir com os 12 meses.');if(p.monetaryCoverage&&Object.values(p.monetaryCoverage).some(c=>c.complete!==true||c.hasEstimates||c.finalMinor===null))throw Error('Cobertura monetária incompleta.');}
@@ -30,19 +33,22 @@ function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,i
  function replace(rows,scope,source){
   const prior=candidate.data.transactions,toRemove=prior.filter(t=>inside(t,scope)&&managed(t)&&!(source==='excel'&&(pluginOwns(t)||t.minhasFinancas&&String(t.minhasFinancas.profileId)===profile))),removeSet=new Set(toRemove),kept=prior.filter(t=>!removeSet.has(t));
   const privateRows=[...kept,...candidate.manual.transactions].filter(t=>inside(t,scope)),protectedKeys=new Set(privateRows.map(business)),protectedSimilar=new Set(privateRows.map(similar)),protectedRemote=new Set(privateRows.map(remote).filter(Boolean));
-  const index=new Map(),remoteIndex=new Map(),exactIndex=new Map(),incomingCounts=new Map();
+  const index=new Map(),remoteIndex=new Map(),exactIndex=new Map(),linkIndex=new Map(),incomingCounts=new Map();
   const add=(map,key,t)=>{if(!map.has(key))map.set(key,[]);map.get(key).push(t)};
-  for(const t of toRemove){add(index,business(t),t);add(exactIndex,identity(t),t);if(remote(t))add(remoteIndex,remote(t),t)}
+  for(const t of toRemove){add(index,business(t),t);add(exactIndex,identity(t),t);if(remote(t))add(remoteIndex,remote(t),t);else add(linkIndex,linkIdentity(t),t)}
   for(const row of rows)if(inside(row,scope)&&!(source==='excel'&&pluginOwns(row))){const key=business(row);incomingCounts.set(key,(incomingCounts.get(key)||0)+1)}
   const seen=new Set(),ids=new Set(kept.map(t=>t.id)),matched=new Set(),out=[];
   for(const row of rows){if(!inside(row,scope)||source==='excel'&&pluginOwns(row))continue;if(protectedRow(row)){conflicts.push({reason:'Fonte tenta alterar histórico/projeção protegido.',key:business(row)});continue}const key=remote(row)||identity(row);if(seen.has(key)){conflicts.push({reason:'Fonte contém identidade repetida ou ambígua.',key});continue}seen.add(key);if(protectedKeys.has(business(row))||protectedSimilar.has(similar(row))||remote(row)&&protectedRemote.has(remote(row))){conflicts.push({reason:'Operação corresponde a registro privado/não gerenciado protegido.',key});continue}
    const matches=index.get(business(row))||[],byRemote=remoteIndex.get(remote(row))||[],exact=exactIndex.get(identity(row))||[];
    if(byRemote.length>1||exact.length>1){conflicts.push({reason:'Identidade anterior ambígua; vínculos privados preservados.',key});continue}
-   const old=byRemote[0]||exact[0]||(matches.length===1&&incomingCounts.get(business(row))===1?matches[0]:null);
+   const links=linkIndex.get(linkIdentity(row))||[];
+   if(source==='plugin'&&links.length>1){conflicts.push({reason:'Mais de uma ocorrência Excel corresponde à identidade remota.',key});continue}
+   const old=source==='plugin'?byRemote[0]||(links.length===1&&incomingCounts.get(business(row))===1?links[0]:null):exact[0]||(matches.length===1&&incomingCounts.get(business(row))===1?matches[0]:null);
    if(matches.length&&!old||old&&matched.has(old)){conflicts.push({reason:'Não é possível vincular a atualização a uma única ocorrência anterior.',key});continue}
    if(old)matched.add(old);
    const next={...old,...clone(row),id:old?.id||(source==='plugin'?row.id:'candidate-excel:'+sourceId(key))};
    if(ids.has(next.id)){conflicts.push({reason:'ID conflita com registro preservado.',key});continue}ids.add(next.id);
+   if(source==='plugin'&&old?.minhasFinancas?.key===next.minhasFinancas?.key&&!next.minhasFinancas.seriesId&&old.minhasFinancas.seriesId)next.minhasFinancas.seriesId=old.minhasFinancas.seriesId;
    next.candidateImport={dataset:DATASET,profileId:profile,source,file:row.source||null,businessKey:business(row)};out.push(next);
   }
   operations.push({source,period:scope,removed:toRemove.length,included:out.length,preserved:kept.length+candidate.manual.transactions.length});candidate.data.transactions=[...kept,...out];
