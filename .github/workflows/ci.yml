@@ -32,3 +32,4 @@ jobs:
           node tests/browser-construction-sessions.cjs
           node tests/browser-minhas-financas.cjs
           node tests/browser-candidate-update.cjs
+          node tests/browser-candidate-volume.cjs

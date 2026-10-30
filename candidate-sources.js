@@ -6,7 +6,7 @@ const FILES={'despesas-2026-10-22-22-30-11.xlsx':'Despesa','receitas-2026-10-22-
 function check(ok,message){if(!ok)throw Error(message)}
 function validDate(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value}
 function money(value){
- if(typeof value==='number'){check(Number.isFinite(value),'Valor monetário não finito.');return value}
+ if(typeof value==='number'){check(Number.isFinite(value)&&Number.isSafeInteger(Math.round(value*100))&&Math.abs(value*100-Math.round(value*100))<=0.00001,'Valor monetário não finito ou precisão não comprovada.');return value}
  const text=String(value??'').trim().replace(/^R\$\s*/,'').replace(/\s/g,'');
  check(/^-?(?:\d+(?:[.,]\d{1,2})?|\d{1,3}(?:\.\d{3})+,\d{1,2})$/.test(text),'Valor monetário ausente ou ambíguo.');
  return Core.number(text);
@@ -51,10 +51,10 @@ function fromPacket(packet){
  check(!packet?.poc?.sampleOnly,'Pacote de amostra MCP não comprova cobertura para substituição.');
  const normalized=MF.preview([],packet);check(normalized.passed,'Pacote MCP contém conflitos de normalização.');
  // Only retain an explicit series identifier; recurrence codes are never treated as IDs.
- const original=MF.validate(packet),details=new Map(original.details.map(d=>[[String(d.transaction?.id),d.month].join('|'),d.transaction]));
- const items=new Map(original.items.map(t=>[[String(t.id),t.occurrenceMonth||t.date.slice(0,7)].join('|'),t]));
+ const original=MF.validate(packet),details=new Map(original.details.map(d=>[[d.type,String(d.transaction?.id),d.month].join('|'),d.transaction]));
+ const items=new Map(original.items.map(t=>[[t.type,String(t.id),t.occurrenceMonth].join('|'),t]));
  for(const t of normalized.rows){
-  const m=t.minhasFinancas,key=[String(m.remoteId),m.occurrenceMonth].join('|'),raw=items.get(key),detail=details.get(key);
+  const m=t.minhasFinancas,key=[t.kind==='Despesa'?'expenses':t.kind==='Receita'?'incomes':'transfers',String(m.remoteId),m.occurrenceMonth].join('|'),raw=items.get(key),detail=details.get(key);
   const ids=[raw?.seriesId,detail?.seriesId].filter(v=>v!=null);
   check(ids.every(v=>typeof v==='string'&&v.length>0)&&new Set(ids).size<=1,'Identificador de série remoto inválido ou divergente.');
   if(ids.length)m.seriesId=ids[0];

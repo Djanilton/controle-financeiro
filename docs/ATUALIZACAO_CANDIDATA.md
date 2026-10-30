@@ -168,3 +168,47 @@ Transferências Excel sem situação/efetivação continuam como `Não informado
 O CI anterior do PR #8 passou Node e falhou no assert de largura a 390 px. Os controles candidatos agora limitam largura de inputs/selects/botões e removem largura mínima implícita dos fieldsets; os testes Chromium de importação/conciliação/candidata mantêm o assert de ausência de overflow. Não foi removido ou relaxado o teste. O CI remoto da nova revisão precisa ser acompanhado.
 
 Validação da revisão: 295 testes Node, zero falhas; seis scripts Chromium aprovados (base-reconciliation, reconciliation-performance, settings, construction-sessions, minhas-financas e candidate-update). Verificações incluem padrão anual, largura móvel, geração/exportação/recuperação e assinatura ativa inalterada. `git diff --check` aprovado. Sem teste com base financeira real ou consulta MCP autenticada nesta etapa.
+
+## Revisão de 30/10/2026 — contrato explícito e simulação anual completa
+
+Esta seção substitui os fallbacks descritos no histórico. O contêiner continua aceitando os nomes `minhas-financas-report-v1` e `minhas-financas-source-report-v1`, mas pacotes antigos sem semântica comprovada são recusados. Não há migração automática por suposição. A PoC experimental permanece fora do aplicativo/PR.
+
+### Contrato do pacote normalizado
+
+`financialSemantics` deve coincidir com `MinhasFinancasCore.SEMANTICS`: contract `controle-financeiro-normalized-v1`, currency BRL, scale 2, unit major, itemAmount presentationAmount, detailAmount amount, sign source-signed, dueDate explicit-calendar-date, occurrenceMonth explicit, recurrenceCodes F-fixed-M-monthly-or-installment. É um **contrato local de normalização revisada**, não uma afirmação de que esses sejam os formatos/unidades reais do servidor MCP. Não existe adaptador autorizado a preencher essas declarações a partir de dados reais desconhecidos; o contrato real do fornecedor permanece pendente. As fixtures preenchem esses campos apenas para valores sintéticos de semântica conhecida.
+
+- Vencimento somente em `transaction.dueDate` ou `items.dueDate` explícito, calendário YYYY-MM-DD válido; quando ambos aparecem devem concordar. Null, texto desconhecido, timestamp ou ausência não usam referenceDate/date como alternativa.
+- `occurrenceMonth` explícito YYYY-MM, detalhes indexados por tipo/ID/mês e perfil conferido. Não deriva mês de data genérica. Identidade remota usa codificação JSON inequívoca do composto perfil/tipo/ID/mês/split. Metadados explícitos permitem reconhecer chaves antigas sem mudar o ID local; a chave textual antiga isolada não inventa componentes faltantes.
+- Valores somente números finitos, precisão de duas casas e inteiros menores seguros, com moeda/escala declaradas e coerentes. Sem coerção Number(null), strings monetárias MCP, arredondamento de terceira casa ou fallback entre campos monetários. Sinal da fonte normalizada é conservado em cashAmount; amount representa magnitude no modelo existente. Moedas/escala divergentes bloqueiam. Ausência/null/unknown/invalid têm categorias distintas; zero somente quando explicitamente conhecido.
+- `createdAt` permanece nos campos originais, sem ser usado como lançamento financeiro ou critério de desempate. `effectiveDate` calendário válido ou nulo/ausente não substitui vencimento. Não vincula operações pelo dia de pagamento. Situação explícita é conciliada com os detalhes quando fornecida; não fabrica efetivação.
+- Originais ficam em sourceFields privados, preservando também os campos anteriores do Excel ao estabelecer vínculo. Recorrência, parcelas, séries e divisão são conservadas somente conforme o contrato normalizado; nenhuma nova série ou parcela é criada remotamente.
+
+A presença de financialSemantics não autentica o arquivo nem constitui prova do fornecedor. A substituição exige também controles independentes, páginas/linhas/detalhes, escopo, totais e cobertura consistentes. Dados reais cuja semântica ainda não foi comprovada continuam bloqueados.
+
+### Cobertura e controles independentes
+
+Excel exige controles independentes em todas as entradas, inclusive chamadas diretas do motor, não apenas arquivos produzidos pelo adaptador. Valores desconhecidos/subcentavos não são convertidos a zero.
+
+MCP exige `pluginControl`, separado do pacote: independentControl===true, perfil/from/to e totais `{count,totalMinor}` por expenses/incomes/transfers, conferidos na fonte. A interface usa os três campos de quantidade/total já existentes e não os preenche com os totais do JSON. Uma flag complete sozinha não basta. As flags de cobertura são booleanos estritos; filtros desconhecidos, restritivos ou inconsistentes, totais por situação divergentes, cobertura monetária incompleta, cursores inválidos, páginas repetidas/ausentes e detalhes ambíguos bloqueiam a operação.
+
+Controles e conferência humana não são autenticação criptográfica de origem nem provam snapshot estável. Páginas MCP reais podem refletir mudanças entre consultas: a estratégia de consistência ainda depende do contrato oficial. Não há sincronização incremental presumida.
+
+### Simulações e desempenho
+
+Nova integração sintética cobre 12 meses, três tipos, pendentes/efetivados, pagamento antecipado, lançamento técnico antigo, parcelas/recorrências, duplicatas legítimas com IDs distintos, mudanças de valor/situação, ausência na fonte completa, protegidos/alterações locais, IDs iguais em tipos diferentes, reconhecimento de chave antiga e idempotência. Campos originais e transações fora do período permanecem iguais. Ausências viram possíveis exclusões apenas na candidata, listadas na interface e no relatório, nunca aplicadas.
+
+Detalhes foram indexados por identidade composta em validate/expand/preview; parcelas antigas também usam índice, eliminando buscas repetidas por linha. O custo de clonagem, cópias e serialização continua proporcional ao conteúdo. Não foi reescrito o motor financeiro.
+
+Medição Node isolada dos testes anuais e de fonte, incluindo 30 mil ocorrências MCP, duas prévias idempotentes e exportação/recuperação/undo: 10,152 s de processo de testes; maxRSS 888.084 KiB (~867 MiB); heap utilizado observado 545.627.920 bytes. Inclui o runner e outras simulações desses arquivos, não é heap exclusivo do algoritmo.
+
+Chromium Linux com 30 mil ocorrências: pacote sintético 29.920.306 bytes; revisão recuperável 68.947.049 bytes; prévia 5.593 ms; exportação 1.549 ms; recuperação 1.387 ms. RSS somado dos processos Chromium amostrado a cada 250 ms atingiu 1.624.600 KiB (~1,55 GiB); heap renderer amostrado 402.974.748 bytes. Soma RSS pode incluir páginas compartilhadas; amostragem pode perder picos e heap renderer não inclui todo o Worker. Medição local com outros testes concorrentes, sem SLA ou equivalência Windows/Edge. Permanece risco de memória em dispositivos limitados.
+
+O teste de navegador usa o fluxo real de arquivo/Worker/prévia/exportação/reabertura/desfazer, verifica assinatura ativa intacta, bloqueio persistente, layout a 390 px e consulta direta desabilitada. Playwright limita buffer em memória a 50 MiB; revisão maior foi reaberta por arquivo temporário exclusivamente sintético, sem reduzir os limites de segurança do aplicativo. O CI inclui o teste de volume.
+
+### Situação para revisão
+
+Implementado e validado sinteticamente: contrato local estrito, controles, identidade/vínculos, cobertura, UI e fluxo de 30 mil registros. Sem validação financeira real: equivalência com Excel/base ativa, moeda/escala/datas do MCP, todas as variantes de conta/série/parcela. Bloqueado para fonte MCP real: esclarecimento do fornecedor e adaptação formal revisada. OAuth/PIN e primeira amostra/detalhe funcionaram na PoC segundo testes do usuário; não foram repetidos ou incorporados aqui.
+
+Bloqueio de conciliação, backups, ETag, revisão obrigatória e ausência de aplicação automática continuam preservados. Não existe autorização de merge, deploy ou atualização financeira real. Primeira atualização de 12 meses exige contratos/evidências, fonte completa conciliada, backups/ETag, revisão de conflitos e autorização específica para eventual aplicação.
+
+Reexecução final local: **302 testes Node aprovados**, zero falhas; **sete scripts Chromium aprovados**, incluindo os três cenários de construction-sessions e o novo teste de volume. No volume final: prévia 4.208 ms, exportação 997 ms, recuperação 789 ms; RSS somado amostrado 1.793.372 KiB (~1,71 GiB), heap renderer 402.692.892 bytes. A variação entre execuções reforça que não são SLA. git diff --check aprovado. CI remoto será conferido para o commit publicado no rascunho.

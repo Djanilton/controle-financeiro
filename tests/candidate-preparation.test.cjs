@@ -1,13 +1,15 @@
+const {normalizedFixture,controls}=require('./mcp-contract-fixture.cjs');
 const test=require('node:test'),assert=require('node:assert/strict');
 const C=require('../candidate-update.js'),S=require('../candidate-sources.js'),M=require('../minhas-financas-core.js'),X=require('../vendor/xlsx.full.min.js');
 const names=Object.keys(C.FILES);
 const base=()=>({schema:1,data:{transactions:[],initialBalances:[{id:'synthetic'}],investments:[{id:'investment'}],loans:[{id:'loan'}],construction:{keep:true}},manual:{transactions:[],pluginOutbox:[{id:'local-intent'}]},unknown:{keep:true}});
 const coverage={complete:true,dateReference:'due',profileId:'synthetic',from:'2026-10-01',to:'2044-12-31',types:['Despesa','Receita','Transferência']};
-const options=extra=>({asOf:'2026-10-25',coverage,...extra});
+const options=extra=>({asOf:'2026-10-25',coverage,...extra,pluginControl:extra?.packet?controls(extra.packet):undefined});
 const row=extra=>({'Descrição':'Operação sintética','Valor':10,'Vencimento':'2026-10-10','Conta':'Conta sintética','Situação':'Pendente',...extra});
 function book(rows){const b=X.utils.book_new();X.utils.book_append_sheet(b,X.utils.json_to_sheet(rows),'Relatório');return b}
 function sources(expenses=[row()]){return names.map((name,i)=>{const rows=i===0?expenses:i===1?[row({'Descrição':'Receita sintética'})]:[row({'Descrição':'Transferência sintética','Origem':'Conta sintética','Destino':'Outra conta'})];return S.fromExcelBook(book(rows),X,name,{expectedCount:rows.length,expectedTotalMinor:rows.reduce((n,r)=>n+Math.round(Number(r.Valor)*100),0)})})}
-function packet(){return {schema:M.SCHEMA,complete:true,profileId:'synthetic',currency:'BRL',dateReference:'due',from:'2026-10-01',to:'2027-09-30',generatedAt:'2026-10-25T00:00:00Z',replacementCoverage:{complete:true,dateReference:'due',profileId:'synthetic',from:'2026-10-01',to:'2027-09-30',status:'all',unfiltered:true,types:['expenses','incomes','transfers']},items:[{id:'remote-synthetic',type:'expenses',description:'Operação sintética',date:'2026-10-10',presentationAmount:10,status:'pending',account:{description:'Conta sintética'}}],detailsComplete:true,details:[{profile:{id:'synthetic'},month:'2026-10',transaction:{id:'remote-synthetic',amount:10,dueDate:'2026-10-10'}}],pages:[{pagination:{included:true,totalCount:1,limit:10,offset:0,hasMore:false}}],totals:{expenses:{count:1,total:10},incomes:{count:0,total:0},transfers:{count:0,total:0}}}}
+function rawPacket(){return {schema:M.SCHEMA,complete:true,profileId:'synthetic',currency:'BRL',dateReference:'due',from:'2026-10-01',to:'2027-09-30',generatedAt:'2026-10-25T00:00:00Z',replacementCoverage:{complete:true,dateReference:'due',profileId:'synthetic',from:'2026-10-01',to:'2027-09-30',status:'all',unfiltered:true,types:['expenses','incomes','transfers']},items:[{id:'remote-synthetic',type:'expenses',description:'Operação sintética',date:'2026-10-10',presentationAmount:10,status:'pending',account:{description:'Conta sintética'}}],detailsComplete:true,details:[{profile:{id:'synthetic'},month:'2026-10',transaction:{id:'remote-synthetic',amount:10,dueDate:'2026-10-10'}}],pages:[{pagination:{included:true,totalCount:1,limit:10,offset:0,hasMore:false}}],totals:{expenses:{count:1,total:10},incomes:{count:0,total:0},transfers:{count:0,total:0}}}}
+function packet(){return normalizedFixture(rawPacket())}
 
 test('Excel preserva observações plurais, tags, cartão, categorias, sinais e campos desconhecidos',()=>{
  const r=row({'Valor':-12.34,'Observações':'Anotação privada sintética','Tags':'tag sintética','Cartão':'Cartão sintético','Categoria':'Categoria sintética','Subcategoria':'Subcategoria sintética','Coluna futura':'campo sintético'});
@@ -58,7 +60,7 @@ test('adaptador MCP utiliza o mesmo modelo e recusa amostra/parcelas incompletas
  const incomplete=structuredClone(p);incomplete.pages[0].pagination.hasMore=true;assert.throws(()=>S.fromPacket(incomplete));
 });
 test('volume sintético 30 mil: substituição e exportação/recuperação preservam IDs e original',()=>{
- const excel=names.map((name,i)=>({name,transactions:i?[]:Array.from({length:30000},(_,j)=>({kind:'Despesa',description:'Ocorrência sintética '+j,dueDate:'2026-10-10',date:'2026-10-10',account:'Conta sintética',cashAmount:1,amount:1,status:'Pendente',notes:''})),expectedCount:i?0:30000,expectedTotalMinor:i?0:3000000}));
+ const excel=names.map((name,i)=>({name,independentControl:true,transactions:i?[]:Array.from({length:30000},(_,j)=>({kind:'Despesa',description:'Ocorrência sintética '+j,dueDate:'2026-10-10',date:'2026-10-10',account:'Conta sintética',cashAmount:1,amount:1,status:'Pendente',notes:''})),expectedCount:i?0:30000,expectedTotalMinor:i?0:3000000}));
  const b=base(),a=C.preview(b,options({excel}));assert.ok(a.passed);assert.equal(a.candidate.data.transactions.length,30000);assert.equal(b.data.transactions.length,0);
  const recovered=JSON.parse(JSON.stringify(a.candidate)),next=C.preview(recovered,options({excel}));assert.ok(next.passed);assert.deepEqual(next.candidate.data.transactions.map(t=>t.id),a.candidate.data.transactions.map(t=>t.id));assert.deepEqual(next.undo,recovered);assert.deepEqual(next.candidate.manual,b.manual);
 });
