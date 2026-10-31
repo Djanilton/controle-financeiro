@@ -47,11 +47,11 @@ function fromExcelBook(book,XLSX,name,control=null){
   expectedCount:control?.expectedCount??transactions.length,expectedTotalMinor:control?.expectedTotalMinor??total,
   independentControl:!!control,warnings:[...warnings]};
 }
-function fromPacket(packet){
+function fromPacket(packet,validated=null){
  check(!packet?.poc?.sampleOnly,'Pacote de amostra MCP não comprova cobertura para substituição.');
- const normalized=MF.preview([],packet);check(normalized.passed,'Pacote MCP contém conflitos de normalização.');
+ const original=validated||MF.validate(packet),normalized=MF.previewValidated([],original);check(normalized.passed,'Pacote MCP contém conflitos de normalização.');
  // Only retain an explicit series identifier; recurrence codes are never treated as IDs.
- const original=MF.validate(packet),details=new Map(original.details.map(d=>[[d.type,String(d.transaction?.id),d.month].join('|'),d.transaction]));
+ const details=new Map(original.details.map(d=>[[d.type,String(d.transaction?.id),d.month].join('|'),d.transaction]));
  const items=new Map(original.items.map(t=>[[t.type,String(t.id),t.occurrenceMonth].join('|'),t]));
  for(const t of normalized.rows){
   const m=t.minhasFinancas,key=[t.kind==='Despesa'?'expenses':t.kind==='Receita'?'incomes':'transfers',String(m.remoteId),m.occurrenceMonth].join('|'),raw=items.get(key),detail=details.get(key);

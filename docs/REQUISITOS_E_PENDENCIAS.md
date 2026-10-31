@@ -606,3 +606,15 @@ CI do commit ef98f82: os 302 testes Node passaram; navegador não executado porq
 Precisão monetária reforçada: não há tolerância absoluta que transforme frações mínimas de centavo em zero; números do contrato local precisam ser exatamente representáveis como o valor decimal de duas casas. Teste adicional cobre fração mínima, zero explícito e centavos conhecidos.
 
 Após o reforço de precisão sem tolerância absoluta: **303 testes Node aprovados**, zero falhas. O CI do commit final reexecuta a suíte e os sete scripts Chromium com runner fixo.
+
+### PR #8 — revisão final direcionada após 15007ac
+
+**Implementado/testado sinteticamente:** page.items obrigatório; conteúdo integral conciliado ao consolidado, inclusive campos adicionais; testes negativos de páginas omitidas, linhas ausentes/duplicadas/diferentes e flags coerentes sem registros. Não se cria garantia de snapshot. Fonte sem páginas reais permanece bloqueada.
+
+**Implementado/testado:** clones redundantes eliminados apenas onde o objeto já pertence privadamente ao Worker ou ao leitor de JSON; APIs públicas preservam isolamento. Vistas validadas são reconhecidas internamente, sem aceitar flag JSON para dispensar validações. Colunas anteriores adicionais de sourceFields agora são preservadas; defeito reproduzido antes da correção. Mantidos IDs, protegidos, vencimento exclusivo, bloqueio, amostras rejeitadas e botão direto desabilitado.
+
+**Memória validada no ensaio local:** comparação por arquivo distingue custo do harness Playwright. Heap renderer ~204 → ~95 MB, mas RSS agregado máximo sem queda consistente, ainda dominado pela exportação. Node com base sintética de 30 mil: maxRSS 818.148 → 551.824 KiB, mesmo hash da candidata e undo igual. Sem alegação de desempenho Windows. Fonte/metodologia/medidas e impedimentos em REVISAO_FINAL_CANDIDATA.md.
+
+**Pendências/bloqueios:** contrato financeiro do fornecedor, cobertura/autenticidade/consistência entre páginas, controles independentes, capacidade de memória no dispositivo e revisão de backups/ETag antes de atualização real. PoC inalterada e isolada. Nenhuma base real, consulta MCP, escrita, merge ou deploy. Resultado final dos testes e CI acompanha o commit e o PR rascunho.
+
+Validação local da revisão direcionada: 310 testes Node aprovados; sete scripts Chromium aprovados, incluindo três cenários construction-sessions e volume de 30 mil; reexecução dos três scripts diretamente afetados após endurecimento da vista interna. git diff --check aprovado. CI remoto acompanha o commit publicado no rascunho.

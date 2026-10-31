@@ -22,7 +22,7 @@ const linkIdentity=t=>JSON.stringify([linkBusiness(t),minor(valueOf(t)),Core.nor
 const remote=t=>MF.remoteKey(t);
 const inside=(t,p)=>validDate(t.dueDate)&&t.dueDate>=p.from&&t.dueDate<=p.to;
 function totals(rows){const groups=new Map();for(const t of rows){if(projection(t)||!validDate(t.dueDate))continue;const key=JSON.stringify([t.dueDate.slice(0,7),t.kind,t.status||'Não informado']);if(!groups.has(key))groups.set(key,{month:t.dueDate.slice(0,7),kind:t.kind,status:t.status||'Não informado',count:0,totalMinor:0,unknownAmounts:0});const g=groups.get(key),amount=minor(valueOf(t));g.count++;if(amount!==null)g.totalMinor+=amount;else g.unknownAmounts++}return [...groups.values()].sort((a,b)=>stable(a).localeCompare(stable(b)))}
-function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,pluginControl=null,includeLegacyPlanilha=false}={}){
+function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,pluginControl=null,includeLegacyPlanilha=false}={},ownedBase=false){
  if(!base?.data||!Array.isArray(base.data.transactions)||!base.manual||!Array.isArray(base.manual.transactions))throw Error('Envelope de base inválido.');
  if(!excel.length&&!packet)throw Error('Selecione fonte completa para substituição.');
  const annual=window12(asOf),excelPeriod=period(selected||annual);if(excel.length&&excelPeriod.to>'2044-12-31')throw Error('Excel limitado a dezembro de 2044.');
@@ -33,7 +33,7 @@ function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,p
  const pluginPeriods=[...(base.data.candidateUpdate?.pluginPeriods||(base.data.candidateUpdate?.pluginPeriod?[base.data.candidateUpdate.pluginPeriod]:[])),...(p?[annual]:[])].map(period).sort((a,b)=>a.from.localeCompare(b.from));const overlays=[];for(const span of pluginPeriods){const last=overlays.at(-1);if(last&&span.from<=last.to){if(span.to>last.to)last.to=span.to}else overlays.push({...span})}const pluginOwns=t=>overlays.some(span=>inside(t,span));
  const candidate=clone(base),conflicts=[],operations=[],manifest=excel.map(f=>f.name);
  const managed=t=>(!t.candidateImport?.profileId||String(t.candidateImport.profileId)===profile)&&(!t.minhasFinancas?.profileId||String(t.minhasFinancas.profileId)===profile)&&TYPES.includes(t.kind)&&!protectedRow(t)&&((t.candidateImport?.dataset===DATASET&&String(t.candidateImport.profileId)===profile)||t.candidateImport?.source==='excel'||t.minhasFinancas&&String(t.minhasFinancas.profileId)===profile||FILES[t.source]||includeLegacyPlanilha&&t.source==='Planilha');
- function replace(rows,scope,source){
+ function replace(rows,scope,source,ownedRows=false){
   const prior=candidate.data.transactions,toRemove=prior.filter(t=>inside(t,scope)&&managed(t)&&!(source==='excel'&&(pluginOwns(t)||t.minhasFinancas&&String(t.minhasFinancas.profileId)===profile))),removeSet=new Set(toRemove),kept=prior.filter(t=>!removeSet.has(t));
   const privateRows=[...kept,...candidate.manual.transactions].filter(t=>inside(t,scope)),protectedKeys=new Set(privateRows.map(business)),protectedSimilar=new Set(privateRows.map(similar)),protectedRemote=new Set(privateRows.map(remote).filter(Boolean));
   const index=new Map(),remoteIndex=new Map(),exactIndex=new Map(),linkIndex=new Map(),incomingCounts=new Map();
@@ -49,7 +49,8 @@ function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,p
    const old=source==='plugin'?byRemote[0]||(links.length===1&&incomingCounts.get(business(row))===1?links[0]:null):exact[0]||(matches.length===1&&incomingCounts.get(business(row))===1?matches[0]:null);
    if(matches.length&&!old||old&&matched.has(old)){conflicts.push({description:row.description,dueDate:row.dueDate,kind:row.kind,reason:'Não é possível vincular a atualização a uma única ocorrência anterior.',key});continue}
    if(old)matched.add(old);
-   const next={...old,...clone(row),id:old?.id||(source==='plugin'?row.id:'candidate-excel:'+sourceId(key))};
+   const next={...old,...(ownedRows?row:clone(row)),id:old?.id||(source==='plugin'?row.id:'candidate-excel:'+sourceId(key))};
+   if(old?.sourceFields&&row.sourceFields)next.sourceFields={...old.sourceFields,...row.sourceFields};
    if(ids.has(next.id)){conflicts.push({description:row.description,dueDate:row.dueDate,kind:row.kind,reason:'ID conflita com registro preservado.',key});continue}ids.add(next.id);
    if(source==='plugin'&&old&&remote(old)===remote(next)&&!next.minhasFinancas.seriesId&&old.minhasFinancas.seriesId)next.minhasFinancas.seriesId=old.minhasFinancas.seriesId;
    next.candidateImport={dataset:DATASET,profileId:profile,source,file:row.source||null,businessKey:business(row)};out.push(next);
@@ -57,16 +58,16 @@ function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,p
   operations.push({source,period:scope,removed:toRemove.length,included:out.length,preserved:kept.length+candidate.manual.transactions.length});candidate.data.transactions=[...kept,...out];
  }
  if(excel.length){const rows=[];for(const f of excel){if(f.independentControl!==true)throw Error('Controles independentes do Excel não informados.');if(!Array.isArray(f.transactions)||!Number.isInteger(f.expectedCount)||f.expectedCount!==f.transactions.length||!Number.isSafeInteger(f.expectedTotalMinor)||f.transactions.reduce((sum,t)=>sum+requiredMinor(valueOf(t)),0)!==f.expectedTotalMinor)throw Error('Contagens/totais Excel não conciliados.');for(const t of f.transactions){if(!validDate(t.dueDate)||!t.description||!t.account||t.kind!==FILES[f.name]||minor(valueOf(t))===null||t.kind==='Transferência'&&!t.destination)throw Error('Excel sem vencimento/campos obrigatórios válidos.');rows.push({...clone(t),source:f.name,id:'candidate-excel:'+encodeURIComponent(business(t))})}}replace(rows,excelPeriod,'excel')}
- if(p){const normalized=Sources.fromPacket(packet);replace(normalized.transactions,annual,'plugin')}
+ if(p){const normalized=Sources.fromPacket(packet,p);replace(normalized.transactions,annual,'plugin',true)}
  if(conflicts.length)candidate.data.transactions=clone(base.data.transactions);
  if(!conflicts.length)candidate.data.candidateUpdate={schema:2,mode:'replace-due-period',dataset:DATASET,profileId:profile,cutoff:CUTOFF,window:annual,excel:manifest.length?manifest:base.data.candidateUpdate?.excel||[],pluginPeriods:overlays,pluginGeneratedAt:p?.generatedAt||base.data.candidateUpdate?.pluginGeneratedAt||null};
  const sourcePeriod=p?annual:excelPeriod,managedBefore=base.data.transactions.filter(t=>operations.some(o=>inside(t,o.period)&&!(o.source==='excel'&&(pluginOwns(t)||t.minhasFinancas&&String(t.minhasFinancas.profileId)===profile)))&&managed(t)),newIds=new Set(candidate.data.transactions.map(t=>t.id));
  let summary={removed:managedBefore.length,included:candidate.data.transactions.filter(t=>operations.some(o=>inside(t,o.period)&&!(o.source==='excel'&&(pluginOwns(t)||t.minhasFinancas&&String(t.minhasFinancas.profileId)===profile)))&&managed(t)).length,preserved:base.data.transactions.length-managedBefore.length+base.manual.transactions.length,conflicting:conflicts.length};
  if(conflicts.length)summary={removed:0,included:0,preserved:base.data.transactions.length+base.manual.transactions.length,conflicting:conflicts.length};
- return {schema:'controlled-update-preview-v2',passed:!conflicts.length,activeUnchanged:true,window:sourcePeriod,operations,summary,changes:{added:summary.included,updated:0,unchanged:summary.preserved,protected:summary.preserved},pluginChanges:p?operations.at(-1):null,conflicts,possibleDeletions:managedBefore.filter(t=>!newIds.has(t.id)).map(t=>({id:t.id,description:t.description,dueDate:t.dueDate,kind:t.kind,reason:'Remoção candidata por substituição completa confirmada.'})),before:totals([...base.data.transactions,...base.manual.transactions]),after:totals([...candidate.data.transactions,...candidate.manual.transactions]),undo:clone(base),candidate};
+ return {schema:'controlled-update-preview-v2',passed:!conflicts.length,activeUnchanged:true,window:sourcePeriod,operations,summary,changes:{added:summary.included,updated:0,unchanged:summary.preserved,protected:summary.preserved},pluginChanges:p?operations.at(-1):null,conflicts,possibleDeletions:managedBefore.filter(t=>!newIds.has(t.id)).map(t=>({id:t.id,description:t.description,dueDate:t.dueDate,kind:t.kind,reason:'Remoção candidata por substituição completa confirmada.'})),before:totals([...base.data.transactions,...base.manual.transactions]),after:totals([...candidate.data.transactions,...candidate.manual.transactions]),undo:ownedBase?base:clone(base),candidate};
 }
 function undo(result){return clone(result.undo)}
-function recoverReview(value,signature){
+function recoverReview(value,signature,ownedValue=false){
  const state=x=>x?.schema===1&&Array.isArray(x.data?.transactions)&&Array.isArray(x.manual?.transactions);
  const count=n=>Number.isSafeInteger(n)&&n>=0;
  const group=r=>r&&count(r.count)&&Number.isSafeInteger(r.totalMinor)&&count(r.unknownAmounts||0);
@@ -74,7 +75,7 @@ function recoverReview(value,signature){
  const p=value?.preview;
  if(value?.schema!=='candidate-review-v1'||p?.schema!=='controlled-update-preview-v2'||!state(p.candidate)||!state(p.undo)||typeof p.passed!=='boolean'||!span(p.window)||!Array.isArray(p.before)||!p.before.every(group)||!Array.isArray(p.after)||!p.after.every(group)||!Array.isArray(p.conflicts)||!p.conflicts.every(c=>c&&typeof c.reason==='string')||!Array.isArray(p.operations)||!p.operations.every(o=>['excel','plugin'].includes(o.source)&&span(o.period))||!p.summary||!['removed','included','preserved','conflicting'].every(k=>count(p.summary[k]))||typeof value.sourceSignature!=='string')throw Error('Formato de revisão candidata não reconhecido.');
  if(value.sourceSignature!==signature||JSON.stringify({data:p.undo.data,manual:p.undo.manual})!==signature)throw Error('A base ativa difere da revisão exportada. Gere nova prévia; nenhuma restauração foi aplicada.');
- return {...clone(p),restored:true};
+ return {...(ownedValue?p:clone(p)),restored:true};
 }
-const api={FILES,CUTOFF,window12,preview,undo,recoverReview};if(typeof module==='object')module.exports=api;else root.CandidateUpdate=api;
+const api={FILES,CUTOFF,window12,preview:(base,options)=>preview(base,options),previewOwned:(base,options)=>preview(base,options,true),undo,recoverReview:(value,signature)=>recoverReview(value,signature),recoverReviewOwned:(value,signature)=>recoverReview(value,signature,true)};if(typeof module==='object')module.exports=api;else root.CandidateUpdate=api;
 })(globalThis);

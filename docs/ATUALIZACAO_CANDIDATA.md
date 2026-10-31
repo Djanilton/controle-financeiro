@@ -216,3 +216,11 @@ Reexecução final local: **302 testes Node aprovados**, zero falhas; **sete scr
 CI remoto inicial desta revisão aprovou Node e falhou antes dos navegadores: Ubuntu 26.04 do alias ubuntu-latest não é suportado pelo Playwright 1.56.1 fixado. O workflow agora fixa ubuntu-24.04; nenhum teste foi removido ou relaxado. Resultado da nova execução acompanha o PR.
 
 Após o reforço de precisão sem tolerância absoluta: **303 testes Node aprovados**, zero falhas. O CI do commit final reexecuta a suíte e os sete scripts Chromium com runner fixo.
+
+## Revisão técnica final direcionada — paginação e memória
+
+A revisão sobre 15007ac comprovou que o contêiner normalizado aceitava páginas sem linhas ou com conteúdo divergente, desde que metadados parecessem corretos. Corrigido: page.items obrigatório e comparação integral por registro com p.items; sourcePages também continuam conciliadas. Pacotes antigos sem registros das páginas são bloqueados, sem reconstrução artificial de prova/snapshot.
+
+Otimizações preservam informações: comparação sem strings do dataset inteiro, reaproveitamento de vista validada interna, eliminação de clones redundantes somente em fronteiras com ownership privado (Worker/JSON recém-parseado) e preservação de colunas adicionais antigas em sourceFields. APIs públicas continuam com cópias defensivas e todas as validações. A assinatura é verificada antes e depois do Worker; alteração durante leitura bloqueia antes do cálculo.
+
+O benchmark agora separa envio de buffer pelo Playwright do seletor por arquivo. Dois ensaios por arquivo antes/depois: heap renderer amostrado ~204 MB → ~95 MB; recuperação ~747 ms → ~384 ms; RSS agregado sem melhora consistente (~1,4 GiB), dominado pela exportação. Ensaio Node com base de 30 mil registros: maxRSS 818.148 → 551.824 KiB; candidata JSON com hash idêntico. Dados exportados não foram reduzidos. Sem medição Windows ou SLA. Método, medições completas e limites em [Revisão final da candidata](REVISAO_FINAL_CANDIDATA.md).
