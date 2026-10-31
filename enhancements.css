@@ -12,3 +12,14 @@
 .matrix-table thead th:first-child,.matrix-table thead th:nth-child(2){top:0;z-index:8;background:#1c3552}
 @media(max-width:720px){.matrix-table{--frozen-account:110px;--frozen-info:120px}}
 .form-grid [hidden]{display:none!important}
+/* Compact shared filters: keep the caption and selection on two readable lines.
+   Specificity also overrides the generic report details-summary padding. */
+#view .sticky-filters{padding:12px;margin-bottom:12px}
+#view .sticky-filters h2{font-size:15px;line-height:1.2;margin:0}
+#view .filter-panel{gap:6px;margin-top:8px}
+#view .filter-panel .filter-field>span{font-size:12px;line-height:14px;margin-bottom:2px}
+#view .filter-panel .multi-filter>summary{display:flex;flex-direction:column;justify-content:center;min-height:44px;padding:4px 8px;line-height:16px}
+#view .filter-panel .multi-filter>summary>span{font-size:12px;line-height:14px;margin:0}
+#view .filter-panel .multi-filter>summary>b{font-size:12px;line-height:16px}
+#view .filter-panel .filter-field input:not([type=checkbox]):not([type=radio]),#view .filter-panel .filter-field select{min-height:28px;height:28px;padding:3px 8px;font-size:12px;line-height:20px}
+#view .filter-panel .filter-clear{min-height:28px;padding:3px 10px;font-size:12px;line-height:20px}

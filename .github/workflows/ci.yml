@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -31,3 +31,5 @@ jobs:
           node tests/browser-settings.cjs
           node tests/browser-construction-sessions.cjs
           node tests/browser-minhas-financas.cjs
+          node tests/browser-candidate-update.cjs
+          node tests/browser-candidate-volume.cjs

@@ -91,3 +91,13 @@ A reserva da construção parte do saldo disponível hoje e incorpora os lançam
 Em Configurações > Importações > Carga inicial e recuperação, **Ler planilha da construção no OneDrive** usa a localização privada configurada nas opções da construção. A aplicação valida os valores antes de importar e guarda uma cópia local anterior, disponível para exportação em Opções e cópias da construção. Nenhuma planilha original é regravada.
 
 Rascunhos de sessões diferentes têm cópias independentes. Recarregar uma aba restaura seu rascunho; cópias deixadas por outras sessões aparecem em **Rascunhos recuperáveis** nas opções da construção. Conflitos com a nuvem continuam exigindo revisão. O acompanhamento Excel inclui custos editados, programações, obrigações, cláusulas e histórico de anexos; o backup JSON conserva o estado integral para recuperação.
+
+## Atualização candidata por Excel ou pacote Minhas Finanças
+
+Em Configurações > Importações, **Atualização financeira candidata** prepara uma cópia para revisão, sem aplicar dados. A carga histórica usa os três relatórios Excel de 22/10/2026, período padrão de 12 meses desde o primeiro dia do mês atual (histórico selecionável explicitamente entre 01/10/2026 e dezembro/2044) e controles independentes de quantidade/total conferidos na fonte. Histórico, manuais, projeções e vínculos protegidos são preservados; ausência de cobertura ou conflito impede exportar a candidata.
+
+Minhas Finanças opera por importação de pacote completo validado; consulta MCP direta permanece desabilitada enquanto o fornecedor esclarece a falha de leitura. Amostras parciais não servem para substituir períodos. Há prévia mensal, cópia anterior, relatório e revisão recuperável para reabrir no mesmo conteúdo de base, sem aplicação. O bloqueio de conciliação permanece ativo. Regras, limites e conferências antes da primeira atualização real estão em [Atualização candidata](docs/ATUALIZACAO_CANDIDATA.md).
+
+### Contrato da atualização candidata
+
+A candidata exige vencimento e mês da ocorrência explícitos e contrato financeiro normalizado com moeda, escala, unidade e campos definidos. Pacotes antigos sem essa evidência são bloqueados; date/referenceDate e inteiros não são interpretados por suposição. Excel e MCP exigem controles independentes de contagem/total. A consulta MCP direta permanece indisponível, e a PoC está separada. Veja [contrato, simulações anuais e limites de memória](docs/ATUALIZACAO_CANDIDATA.md).
