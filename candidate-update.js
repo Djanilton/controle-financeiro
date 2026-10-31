@@ -10,7 +10,7 @@ function window12(asOf){if(!validDate(asOf))throw Error('Data de referência inv
 const projection=t=>t.recurringTemplate||t.isProjection||t.calculated||t.isCalculated||t.isFinancing||t.loanId||t.investmentId||t.constructionId||t.payrollId||t.fgtsId||t.origin==='projection';
 const protectedRow=t=>projection(t)||t.isManual||t.protected||t.manualOverride||MF.hasLocalChanges?.(t)||(validDate(t.dueDate)&&t.dueDate<CUTOFF);
 const valueOf=t=>Object.hasOwn(t,'cashAmount')?t.cashAmount:t.amount;
-const minor=n=>typeof n==='number'&&Number.isFinite(n)&&Number.isSafeInteger(Math.round(n*100))&&Math.abs(n*100-Math.round(n*100))<=0.00001?Math.round(n*100):null;
+const minor=n=>typeof n==='number'&&Number.isFinite(n)&&Number.isSafeInteger(Math.round(n*100))&&Number(n.toFixed(2))===n?Math.round(n*100):null;
 const requiredMinor=n=>{const value=minor(n);if(value===null)throw Error('Valor monetário desconhecido ou inválido.');return value};
 const business=t=>JSON.stringify([t.kind,t.dueDate,Core.normalize(t.description),Core.normalize(t.account),Core.normalize(t.destination)]);
 const identity=t=>JSON.stringify([business(t),minor(valueOf(t)),Core.normalize(t.card),Core.normalize(t.category),Core.normalize(t.subcategory),t.installments||'',t.recurrence||'',t.notes||'',t.tags||'']);

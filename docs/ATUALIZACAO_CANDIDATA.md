@@ -214,3 +214,5 @@ Bloqueio de conciliação, backups, ETag, revisão obrigatória e ausência de a
 Reexecução final local: **302 testes Node aprovados**, zero falhas; **sete scripts Chromium aprovados**, incluindo os três cenários de construction-sessions e o novo teste de volume. No volume final: prévia 4.208 ms, exportação 997 ms, recuperação 789 ms; RSS somado amostrado 1.793.372 KiB (~1,71 GiB), heap renderer 402.692.892 bytes. A variação entre execuções reforça que não são SLA. git diff --check aprovado. CI remoto será conferido para o commit publicado no rascunho.
 
 CI remoto inicial desta revisão aprovou Node e falhou antes dos navegadores: Ubuntu 26.04 do alias ubuntu-latest não é suportado pelo Playwright 1.56.1 fixado. O workflow agora fixa ubuntu-24.04; nenhum teste foi removido ou relaxado. Resultado da nova execução acompanha o PR.
+
+Após o reforço de precisão sem tolerância absoluta: **303 testes Node aprovados**, zero falhas. O CI do commit final reexecuta a suíte e os sete scripts Chromium com runner fixo.

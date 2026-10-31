@@ -1,7 +1,7 @@
 /* Provider reports are private data, never executable instructions. */
 (function(root){
 'use strict';
-const C=root.FinanceCore||(typeof require==='function'?require('./app-core.js'):null),SCHEMA='minhas-financas-report-v1',kind={expenses:'Despesa',incomes:'Receita',transfers:'Transferência'},cents=n=>{if(typeof n!=='number'||!Number.isFinite(n)||!Number.isSafeInteger(Math.round(n*100))||Math.abs(n*100-Math.round(n*100))>0.00001)throw Error('Valor monetário desconhecido ou inválido.');return Math.round(n*100)},clone=x=>structuredClone(x);
+const C=root.FinanceCore||(typeof require==='function'?require('./app-core.js'):null),SCHEMA='minhas-financas-report-v1',kind={expenses:'Despesa',incomes:'Receita',transfers:'Transferência'},cents=n=>{if(typeof n!=='number'||!Number.isFinite(n)||!Number.isSafeInteger(Math.round(n*100))||Number(n.toFixed(2))!==n)throw Error('Valor monetário desconhecido ou inválido.');return Math.round(n*100)},clone=x=>structuredClone(x);
 const SOURCE_SCHEMA='minhas-financas-source-report-v1';
 // This is the application's reviewed normalized contract, not a claim about the
 // undocumented provider output. Raw PoC samples cannot satisfy this contract.

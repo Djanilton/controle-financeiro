@@ -6,7 +6,7 @@ const FILES={'despesas-2026-10-22-22-30-11.xlsx':'Despesa','receitas-2026-10-22-
 function check(ok,message){if(!ok)throw Error(message)}
 function validDate(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value}
 function money(value){
- if(typeof value==='number'){check(Number.isFinite(value)&&Number.isSafeInteger(Math.round(value*100))&&Math.abs(value*100-Math.round(value*100))<=0.00001,'Valor monetário não finito ou precisão não comprovada.');return value}
+ if(typeof value==='number'){check(Number.isFinite(value)&&Number.isSafeInteger(Math.round(value*100))&&Number(value.toFixed(2))===value,'Valor monetário não finito ou precisão não comprovada.');return value}
  const text=String(value??'').trim().replace(/^R\$\s*/,'').replace(/\s/g,'');
  check(/^-?(?:\d+(?:[.,]\d{1,2})?|\d{1,3}(?:\.\d{3})+,\d{1,2})$/.test(text),'Valor monetário ausente ou ambíguo.');
  return Core.number(text);
