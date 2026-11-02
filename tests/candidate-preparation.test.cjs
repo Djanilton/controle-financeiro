@@ -55,7 +55,7 @@ test('vínculos de financiamento/investimento e alterações locais MCP permanec
 });
 test('adaptador MCP utiliza o mesmo modelo e recusa amostra/parcelas incompletas',()=>{
  const p=packet(),source=S.fromPacket(p);assert.equal(source.schema,'candidate-source-v1');assert.equal(source.transactions[0].kind,'Despesa');assert.equal(source.transactions[0].dueDate,'2026-10-10');
- const r=C.preview(base(),options({packet:p}));assert.ok(r.passed);assert.deepEqual(r.candidate.data.transactions[0].minhasFinancas.remoteId,'remote-synthetic');
+ assert.equal(source.replacementAllowed,false);assert.throws(()=>C.preview(base(),options({packet:p})),/OBSERVATION_CAPTURE_REQUIRED/);
  assert.throws(()=>S.fromPacket({...p,poc:{sampleOnly:true}}));assert.throws(()=>C.preview(base(),options({packet:{...p,poc:{sampleOnly:true}}})));
  const incomplete=structuredClone(p);incomplete.pages[0].pagination.hasMore=true;assert.throws(()=>S.fromPacket(incomplete));
 });
@@ -94,35 +94,11 @@ test('padrão são doze meses do mês de referência; histórico anterior é opt
  const prior=C.preview(base(),options({asOf:'2027-02-18',excel:sources(),period:{from:'2026-10-01',to:'2026-10-31'}}));assert.equal(prior.candidate.data.transactions.length,3);
  assert.throws(()=>C.preview(base(),options({excel:sources(),period:{from:'2026-09-30',to:'2026-10-31'}})));
 });
-test('Excel vincula a identidade remota inequívoca e preserva ID nas mudanças posteriores de valor',()=>{
- const b=C.preview(base(),options({excel:sources()})).candidate,local=b.data.transactions[0].id;
- const p=packet();p.items[0].seriesId='synthetic-series';
- const r=C.preview(b,options({packet:p}));assert.ok(r.passed);const linked=r.candidate.data.transactions[0];
- assert.equal(linked.id,local);assert.equal(linked.minhasFinancas.profileId,'synthetic');assert.equal(linked.minhasFinancas.remoteId,'remote-synthetic');assert.equal(linked.minhasFinancas.occurrenceMonth,'2026-10');assert.equal(linked.minhasFinancas.seriesId,'synthetic-series');
- const changed=packet();changed.items[0].presentationAmount=15;changed.details[0].transaction.amount=15;changed.totals.expenses.total=15;
- const next=C.preview(r.candidate,options({packet:changed}));assert.ok(next.passed);assert.equal(next.candidate.data.transactions[0].id,local);assert.equal(next.candidate.data.transactions[0].amount,15);assert.equal(next.candidate.data.transactions[0].minhasFinancas.seriesId,'synthetic-series');
- assert.deepEqual(C.preview(next.candidate,options({packet:changed})).candidate,next.candidate);
-});
-test('vínculo retroativo não presume igualdade quando valor/cartão/parcela divergem',()=>{
- const b=C.preview(base(),options({excel:sources()})).candidate;
- for(const mutate of [p=>{p.items[0].presentationAmount=20;p.details[0].transaction.amount=20;p.totals.expenses.total=20},p=>p.items[0].card={description:'Outro cartão'},p=>{p.details[0].transaction.installmentsCount=12;p.details[0].transaction.installmentNumber=2}]){
-  const p=packet();mutate(p);const r=C.preview(b,options({packet:p}));assert.equal(r.passed,false);assert.deepEqual(r.candidate,b);
- }
-});
-test('dois candidatos Excel ou nova identidade remota ambígua bloqueiam associação',()=>{
- const b=C.preview(base(),options({excel:sources()})).candidate;b.data.transactions.push({...b.data.transactions[0],id:'duplicate-synthetic'});
- const r=C.preview(b,options({packet:packet()}));assert.equal(r.passed,false);assert.deepEqual(r.candidate,b);
- const first=C.preview(base(),options({packet:packet()})).candidate,p=packet();p.items[0].id=p.details[0].transaction.id='other-remote';
- assert.equal(C.preview(first,options({packet:p})).passed,false);
-});
+test('Bloqueio do antigo fluxo: Excel vincula a identidade remota inequívoca e preserva ID nas mudanças posteriores de valor',()=>{const b=C.preview(base(),options({excel:sources()})).candidate,original=structuredClone(b);assert.throws(()=>C.preview(b,options({packet:packet()})),/OBSERVATION_CAPTURE_REQUIRED/);assert.deepEqual(b,original)});
+test('Bloqueio do antigo fluxo: vínculo retroativo não presume igualdade quando valor/cartão/parcela divergem',()=>{const b=C.preview(base(),options({excel:sources()})).candidate,original=structuredClone(b);assert.throws(()=>C.preview(b,options({packet:packet()})),/OBSERVATION_CAPTURE_REQUIRED/);assert.deepEqual(b,original)});
+test('Bloqueio do antigo fluxo: dois candidatos Excel ou nova identidade remota ambígua bloqueiam associação',()=>{const b=C.preview(base(),options({excel:sources()})).candidate,original=structuredClone(b);assert.throws(()=>C.preview(b,options({packet:packet()})),/OBSERVATION_CAPTURE_REQUIRED/);assert.deepEqual(b,original)});
 test('situação desconhecida das transferências não presume pagamento durante atualização',()=>{
  const excel=sources();excel[2].transactions[0].status='Não informado';excel[2].transactions[0].paymentDate='';excel[2].transactions[0].effectiveDateKnown=false;
  const a=C.preview(base(),options({excel}));const b=C.preview(a.candidate,options({excel}));assert.ok(b.passed);const t=b.candidate.data.transactions.find(t=>t.kind==='Transferência');assert.equal(t.status,'Não informado');assert.equal(t.paymentDate,'');assert.equal(t.effectiveDateKnown,false);
 });
-test('parcela numerada do Excel recebe ID remoto sem perder ID local ou gerar edição local falsa',()=>{
- const excel=sources([row({'Descrição':'Compra antiga 8/12','Recorrência':'Parcelada','Lançamento':'2025-01-01'})]);
- const b=C.preview(base(),options({excel})).candidate,id=b.data.transactions[0].id,p=packet();
- p.items[0].description='Compra antiga';p.items[0].recurrence='M';p.details[0].transaction.installmentNumber=8;p.details[0].transaction.installmentsCount=12;p.details[0].transaction.createdAt='2025-01-01';
- const r=C.preview(b,options({packet:p}));assert.ok(r.passed);assert.equal(r.candidate.data.transactions[0].id,id);assert.equal(r.candidate.data.transactions[0].installments,'8/12');
- assert.equal(M.hasLocalChanges(r.candidate.data.transactions[0]),false);assert.deepEqual(C.preview(r.candidate,options({packet:p})).candidate,r.candidate);
-});
+test('Bloqueio do antigo fluxo: parcela numerada do Excel recebe ID remoto sem perder ID local ou gerar edição local falsa',()=>{const b=C.preview(base(),options({excel:sources()})).candidate,original=structuredClone(b);assert.throws(()=>C.preview(b,options({packet:packet()})),/OBSERVATION_CAPTURE_REQUIRED/);assert.deepEqual(b,original)});

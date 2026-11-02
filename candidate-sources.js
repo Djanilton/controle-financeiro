@@ -2,6 +2,7 @@
 (function(root){'use strict';
 const Core=root.FinanceCore||(typeof require==='function'?require('./app-core.js'):null);
 const MF=root.MinhasFinancasCore||(typeof require==='function'?require('./minhas-financas-core.js'):null);
+const Observations=root.MinhasFinancasObservations||(typeof require==='function'?require('./minhas-financas-observations.js'):null);
 const FILES={'despesas-2026-10-22-22-30-11.xlsx':'Despesa','receitas-2026-10-22-22-33-58.xlsx':'Receita','transferências-2026-10-22-22-35-10.xlsx':'Transferência'};
 function check(ok,message){if(!ok)throw Error(message)}
 function validDate(value){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value}
@@ -59,8 +60,8 @@ function fromPacket(packet,validated=null){
   check(ids.every(v=>typeof v==='string'&&v.length>0)&&new Set(ids).size<=1,'Identificador de série remoto inválido ou divergente.');
   if(ids.length)m.seriesId=ids[0];
  }
- return {schema:'candidate-source-v1',source:'plugin',transactions:normalized.rows,profileId:String(packet.profileId),
+ return {schema:'candidate-source-v1',source:'plugin',replacementAllowed:false,applyAllowed:false,legacyNormalizedOnly:true,transactions:normalized.rows,profileId:String(packet.profileId),
   from:packet.from,to:packet.to,dateReference:'due'};
 }
-const api={FILES,validDate,money,fromExcelBook,fromPacket};root.CandidateSources=api;if(typeof module!=='undefined')module.exports=api;
+const api={FILES,validDate,money,fromExcelBook,fromPacket,fromObservations:(rows,packet,options)=>Observations.compare(rows,packet,options)};root.CandidateSources=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);

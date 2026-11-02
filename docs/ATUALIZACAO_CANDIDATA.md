@@ -1,3 +1,15 @@
+# Atualização candidata — regra vigente em 02/11/2026
+
+**Excel e MCP são fluxos independentes.** Excel conserva substituição controlada por vencimento, três relatórios e controles independentes. MCP produz apenas propostas por observações comprovadas, com registros não observados preservados. O fornecedor confirmou que páginas/totais coerentes não provam snapshot ou exclusões. Manifestos replacementCoverage e complete=true não autorizam substituição MCP.
+
+Veja o [contrato e de/para vigente](MCP_OBSERVACOES.md). A candidata MCP não altera a base ativa; exportação para revisão tem wrapper próprio não ativável. Pacotes antigos e revisões antigas de substituição MCP ficam bloqueados, sem apagar arquivos. Associações Excel→MCP automáticas da revisão anterior foram suspensas: uma observação parcial não comprova unicidade global.
+
+**As seções a seguir preservam a evolução histórica.** Regras sobre substituição pelo plugin, combinação Excel+plugin, snapshots, fallbacks de datas, status textual ou igualdade entre amount/presentationAmount foram superadas pelo contrato acima. Não usá-las para preparar atualização real.
+
+---
+
+## Histórico da implementação e revisões anteriores
+
 # Atualização candidata por Excel e Minhas Finanças
 
 Implementação preparada para revisão de código por Pull Request, sem aplicação financeira, sincronização ou deploy. A implementação recuperada foi integrada à branch `feat/atualizacao-candidata`, sobre `6976eaa`, em worktree isolado. Os três Excel informados foram baixados em leitura e validados privadamente nesta rodada. As seções históricas abaixo foram preservadas; a revisão vigente está ao final. Validação dos campos do arquivo não prova ausência de filtros na exportação nem reconciliação com a base financeira real.
