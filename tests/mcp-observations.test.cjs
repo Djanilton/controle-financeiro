@@ -92,3 +92,7 @@ test('ID local repetido não permite gerar propostas que perderiam vínculos',()
 test('índice deduplicado de contas não esconde vínculo divergente ou edição local',()=>{
  const p=single(),r=run(p),t=r.candidate.data.transactions.at(-1),M=require('../minhas-financas-core.js');assert.equal(M.hasLocalChanges(t),false);t.notes='manual';assert.equal(M.hasLocalChanges(t),true);const o=F.options(p);o.accountLinks.push({profileId:p.profileId,remoteId:'account-a',localName:'Conta diferente'});assert.equal(C.preview(F.base(),o).passed,false);
 });
+test('cartão sem vínculo comprovado e fonte remota protegida não geram propostas novas',()=>{
+ const card=single();F.tx(card).card={id:'synthetic-card',description:'Cartão sintético'};assert.ok(codes(run(card)).includes('CARD_LINK_UNCONFIRMED'));
+ for(const field of ['loanId','investmentId','constructionId','fgtsId','payrollId','isProjection']){const p=single();F.tx(p)[field]='synthetic-protected';assert.ok(codes(run(p)).includes('REMOTE_PROTECTED_SOURCE'))}
+});

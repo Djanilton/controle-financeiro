@@ -90,7 +90,7 @@ function compare(base,packet,{window,accountLinks=[],protectedRecords=[],isProte
    if(indices.length>1)fail('REMOTE_IDENTITY_AMBIGUOUS');if(protectedKeys.has(k))fail('LOCAL_RECORD_PROTECTED');
    if(old&&(!date(old.dueDate)||old.dueDate<window.from||old.dueDate>window.to))fail('LOCAL_DUE_OUTSIDE_WINDOW');
    if(old&&(isProtected(old)||old.minhasFinancas?.observationVersion&&fingerprint(old)!==old.minhasFinancas.observationVersion)){changes.protected++;fail('LOCAL_RECORD_PROTECTED')}
-   const d=captured.details.get(k);if(!d)fail('DETAIL_REQUIRED');const kind=type(item.type),due=d.dueDate;if(type(request.type)&&type(request.type)!==kind)fail('TYPE_FILTER_MISMATCH');
+   const d=captured.details.get(k);if(!d)fail('DETAIL_REQUIRED');if(isProtected(d)||['loanId','investmentId','constructionId','fgtsId','payrollId','isProjection','isFinancing','recurringTemplate'].some(field=>own(d,field)&&d[field]!=null&&d[field]!==false))fail('REMOTE_PROTECTED_SOURCE');if(d.card!=null||item.card!=null)fail('CARD_LINK_UNCONFIRMED');const kind=type(item.type),due=d.dueDate;if(type(request.type)&&type(request.type)!==kind)fail('TYPE_FILTER_MISMATCH');
    if(!date(due))fail('DUE_DATE_UNCONFIRMED');if(own(item,'dueDate')&&item.dueDate!==due)fail('DUE_DATE_MISMATCH');
    if(due<CUTOFF||due<window.from||due>window.to||due<request.startDate||due>request.endDate)fail('DUE_DATE_OUTSIDE_WINDOW');
    const amount=money(d);if(item.presentationAmount!=null&&item.presentationAmount!==d.presentationAmount)fail('PRESENTATION_AMOUNT_MISMATCH');
