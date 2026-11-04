@@ -65,8 +65,8 @@ function observationPreview(base,packet,window,accountLinks,ownedBase){
  const priorProfile=base.data.candidateUpdate?.profileId||base.data.minhasFinancas?.profileId;
  if(priorProfile&&priorProfile!==packet.profileId)throw Error('Perfil diferente da base gerenciada.');
  const result=Sources.fromObservations(base.data.transactions,packet,{window,accountLinks,protectedRecords:base.manual.transactions,isProtected:protectedRow});
- const candidate=clone(base);candidate.data.transactions=result.rows;if(result.passed)candidate.data.mcpObservationReview={schema:'mcp-observation-review-v1',profileId:packet.profileId,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false};
- return {schema:'controlled-update-preview-v2',mode:'mcp-observations',passed:result.passed,activeUnchanged:true,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false,
+ const candidate=clone(base);candidate.data.transactions=result.rows;if(result.passed&&!result.mappingOnly)candidate.data.mcpObservationReview={schema:'mcp-observation-review-v1',profileId:packet.profileId,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false};
+ return {schema:'controlled-update-preview-v2',mode:'mcp-observations',mappingOnly:result.mappingOnly===true,mappingReport:result.mappingReport,passed:result.passed,activeUnchanged:true,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false,
  operations:[{source:'plugin',mode:'observations',period:window,removed:0,included:result.changes.added}],
  summary:{removed:0,included:result.passed?result.changes.added:0,preserved:base.data.transactions.length+base.manual.transactions.length,conflicting:result.conflicts.length},
  changes:result.changes,pluginChanges:result.changes,conflicts:result.conflicts,notObserved:result.notObserved,proposals:result.proposals,warnings:result.warnings,possibleDeletions:[],
@@ -81,6 +81,7 @@ function recoverReview(value,signature,ownedValue=false){
  const p=value?.preview;
  if(value?.schema!=='candidate-review-v1'||p?.schema!=='controlled-update-preview-v2'||!state(p.candidate)||!state(p.undo)||typeof p.passed!=='boolean'||!span(p.window)||!Array.isArray(p.before)||!p.before.every(group)||!Array.isArray(p.after)||!p.after.every(group)||!Array.isArray(p.conflicts)||!p.conflicts.every(c=>c&&typeof c.reason==='string')||!Array.isArray(p.operations)||!p.operations.every(o=>['excel','plugin'].includes(o.source)&&span(o.period))||!p.summary||!['removed','included','preserved','conflicting'].every(k=>count(p.summary[k]))||typeof value.sourceSignature!=='string')throw Error('Formato de revisão candidata não reconhecido.');
  if(p.operations.some(o=>o.source==='plugin')&&(p.mode!=='mcp-observations'||p.replacementAllowed!==false||p.applyAllowed!==false||p.snapshot!==false||p.complete!==false||p.summary.removed!==0||p.possibleDeletions?.length!==0||p.operations.some(o=>o.source==='plugin'&&(o.mode!=='observations'||o.removed!==0))))throw Error('Revisão MCP antiga de substituição bloqueada; gere comparação por observações.');
+ if(p.mappingOnly&&(stable(p.candidate)!==stable(p.undo)||p.summary.included!==0||p.proposals?.length!==0))throw Error('Captura de detalhes não pode alterar a candidata.');
  if(p.mode==='mcp-observations'){
   const index=new Map(p.candidate.data.transactions.map(t=>[t.id,t]));
   if(index.size!==p.candidate.data.transactions.length||p.undo.data.transactions.some(t=>!index.has(t.id)||protectedRow(t)&&stable(t)!==stable(index.get(t.id)))||stable(p.undo.manual)!==stable(p.candidate.manual))throw Error('Revisão de observações perdeu identidade ou alterou registro protegido.');
