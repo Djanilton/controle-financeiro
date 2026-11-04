@@ -2,7 +2,7 @@
  * Never fetches, persists, retries, deletes, applies, or derives missing fields. */
 (function(root){'use strict';
 const SCHEMA='minhas-financas-observations-v1',CUTOFF='2026-10-01';
-const TYPES={expenses:'Despesa',incomes:'Receita',transfers:'Transferência'},ALIASES={despesa:'expenses',receita:'incomes',transferencia:'transfers'};
+const TYPES={expenses:'Despesa',incomes:'Receita',transfers:'Transferência'},ALIASES={expense:'expenses',despesa:'expenses',receita:'incomes',transferencia:'transfers'};
 const copy=x=>structuredClone(x),own=(o,k)=>Object.hasOwn(o||{},k),text=x=>typeof x==='string'&&x.length>0;
 const fail=code=>{throw Object.assign(Error(code),{code})};
 const date=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T00:00:00Z'))&&new Date(v+'T00:00:00Z').toISOString().slice(0,10)===v;
@@ -10,7 +10,7 @@ const month=v=>typeof v==='string'&&/^\d{4}-\d{2}$/.test(v)&&date(v+'-01');
 const type=v=>typeof v==='string'?(own(TYPES,v)?v:own(ALIASES,v)?ALIASES[v]:undefined):undefined;
 const stable=v=>JSON.stringify(v&&typeof v==='object'?Array.isArray(v)?v.map(x=>JSON.parse(stable(x))):Object.fromEntries(Object.keys(v).sort().map(k=>[k,JSON.parse(stable(v[k]))])):v??null);
 function state(o,k){return !own(o,k)?'ABSENT':o[k]===null?'NULL':o[k]===undefined?'UNKNOWN':'PRESENT'}
-function dateFormat(v){if(v===null)return 'NULL';if(v===undefined)return 'ABSENT';if(date(v))return 'CALENDAR';if(legacyLocal(v))return 'LEGACY_LOCAL_MINUTE';if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2} /.test(v))return 'INVALID_LOCAL_DATETIME';if(typeof v!=='string')return 'INVALID';if(/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v))return /(?:Z|[+-]\d\d:\d\d)$/.test(v)?'INSTANT_WITH_OFFSET':'LOCAL_TIMESTAMP';return 'UNMAPPED'}
+function dateFormat(v){if(v===null)return 'NULL';if(v===undefined)return 'ABSENT';if(date(v))return 'CALENDAR';if(legacyLocal(v))return v.length===19?'LEGACY_LOCAL_SECOND':'LEGACY_LOCAL_MINUTE';if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2} /.test(v))return 'INVALID_LOCAL_DATETIME';if(typeof v!=='string')return 'INVALID';if(/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v))return /(?:Z|[+-]\d\d:\d\d)$/.test(v)?'INSTANT_WITH_OFFSET':'LOCAL_TIMESTAMP';return 'UNMAPPED'}
 function key(profile,t){if(!text(profile)||!type(t.type)||!text(t.id)||!month(t.occurrenceMonth)||own(t,'splitId')&&t.splitId!==null&&!text(t.splitId))fail('IDENTITY_UNCONFIRMED');return JSON.stringify([profile,type(t.type),t.id,t.occurrenceMonth,t.splitId??null])}
 function remoteKey(t){const m=t.minhasFinancas;if(!m)return null;try{return key(m.profileId,{type:Object.keys(TYPES).find(k=>TYPES[k]===t.kind),id:m.remoteId,occurrenceMonth:m.occurrenceMonth,splitId:m.splitId??null})}catch{return null}}
 function unwrap(payload,context=null){
@@ -41,8 +41,8 @@ function money(t,context=null,request=null){
  if(p.native!=null&&(!text(p.native.currency)||!Number.isInteger(p.native.scale)||p.native.scale<0||p.native.scale>6||!(typeof p.native.minor==='string'&&/^-?\d+$/.test(p.native.minor)||Number.isSafeInteger(p.native.minor))))fail('NATIVE_MONEY_INVALID');
  return n/100;
 }
-// Only the observed minute-precision local legacy spelling is accepted. No timezone.
-function legacyLocal(v){const m=typeof v==='string'&&v.match(/^(\d{4}-\d{2}-\d{2}) ([01]\d|2[0-3]):[0-5]\d$/);return m&&date(m[1])?m[1]:null}
+// Observed local legacy spellings: minutes or seconds. No timezone conversion.
+function legacyLocal(v){const m=typeof v==='string'&&v.match(/^(\d{4}-\d{2}-\d{2}) ([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/);return m&&date(m[1])?m[1]:null}
 function calendarDue(v){return date(v)?v:legacyLocal(v)}
 const integerMinor=v=>Number.isSafeInteger(v)?BigInt(v):typeof v==='string'&&/^-?\d+$/.test(v)?BigInt(v):null;
 const valueType=v=>v===null?'null':Array.isArray(v)?'array':typeof v==='number'?Number.isInteger(v)?'integer':'number':typeof v;
