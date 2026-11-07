@@ -21,7 +21,7 @@ function normalizedRow(raw,index,source){
  for(const k of ['id','sharedId','description','cardId'])fields[k]=state(raw,k,text);
  fields.amountMinor=state(raw,'amountMinor',Number.isSafeInteger);fields.invoiceMonth=state(raw,'invoiceMonth',month);
  for(const k of ['installmentNumber','installmentsCount'])fields[k]=state(raw,k,v=>Number.isSafeInteger(v)&&v>0);
- const r={...copy(raw),index,side:source,fields,amountMinor:Number.isSafeInteger(raw.amountMinor)?raw.amountMinor:null,kind:KINDS.includes(raw.kind)?raw.kind:'unknown'};
+ const r={...copy(raw),sourceFields:copy(raw.sourceFields??raw),index,side:source,fields,amountMinor:Number.isSafeInteger(raw.amountMinor)?raw.amountMinor:null,kind:KINDS.includes(raw.kind)?raw.kind:'unknown'};
  for(const k of ['purchaseDate','processingDate','dueDate'])r[k]=date(raw[k]);r.invoiceMonth=month(raw.invoiceMonth);
  r.cardId=text(raw.cardId);r.description=text(raw.description);r.sharedId=text(raw.sharedId);r.id=text(raw.id);
  r.installmentNumber=fields.installmentNumber==='CONFIRMED'?raw.installmentNumber:null;r.installmentsCount=fields.installmentsCount==='CONFIRMED'?raw.installmentsCount:null;
