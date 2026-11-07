@@ -9,7 +9,7 @@ function validDate(d){return typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&
 function period(p){if(!p||!validDate(p.from)||!validDate(p.to)||p.from<CUTOFF||p.to<p.from)throw Error('Período de vencimento inválido ou anterior ao corte.');return {from:p.from,to:p.to,dateReference:'due'}}
 function window12(asOf){if(!validDate(asOf))throw Error('Data de referência inválida.');return period({from:asOf.slice(0,7)+'-01',to:new Date(Date.UTC(Number(asOf.slice(0,4)),Number(asOf.slice(5,7))+11,0)).toISOString().slice(0,10)})}
 const projection=t=>t.recurringTemplate||t.isProjection||t.calculated||t.isCalculated||t.isFinancing||t.loanId||t.investmentId||t.constructionId||t.payrollId||t.fgtsId||t.origin==='projection';
-const protectedRow=t=>projection(t)||t.isManual||t.protected||t.manualOverride||(t.minhasFinancas?.observationVersion?Observations.hasLocalChanges(t):MF.hasLocalChanges?.(t))||(validDate(t.dueDate)&&t.dueDate<CUTOFF);
+const protectedRow=t=>projection(t)||t.includedInTotals===false||t.monthlySavings===true||t.isManual||t.protected||t.manualOverride||(t.minhasFinancas?.observationVersion?Observations.hasLocalChanges(t):MF.hasLocalChanges?.(t))||(validDate(t.dueDate)&&t.dueDate<CUTOFF);
 const valueOf=t=>Object.hasOwn(t,'cashAmount')?t.cashAmount:t.amount;
 const minor=n=>typeof n==='number'&&Number.isFinite(n)&&Number.isSafeInteger(Math.round(n*100))&&Number(n.toFixed(2))===n?Math.round(n*100):null;
 const requiredMinor=n=>{const value=minor(n);if(value===null)throw Error('Valor monetário desconhecido ou inválido.');return value};
