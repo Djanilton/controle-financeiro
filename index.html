@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./styles.css?v=20261018-balanced">
   <link rel="stylesheet" href="./month-pivot.css?v=20261022-years">
   <link rel="stylesheet" href="./financial-charts.css?v=20261024-filtered">
+  <link rel="stylesheet" href="./card-invoice.css?v=20261107-invoices">
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
@@ -59,6 +60,8 @@
         await loadScript('./month-pivot.js?v=20261022-years');
         await loadScript('./financial-charts.js?v=20261024-filtered');
         await loadScript('./month-inputs.js?v=20261024-focus');
+        await loadScript('./card-invoice-core.js?v=20261107-invoices');
+        await loadScript('./card-invoice-ui.js?v=20261107-invoices');
         await loadScript('./interaction-state.js?v=20261024-focus');
       }
       }catch(error){const view=document.getElementById('view');if(view)view.textContent='Não foi possível carregar o aplicativo. Seus dados locais não foram apagados. Recarregue a página. Detalhe: '+error.message;console.error(error)}

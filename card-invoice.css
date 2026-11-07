@@ -1,0 +1,17 @@
+/* Scoped to the independent local invoice review. */
+.invoice-workspace{min-width:0;overflow-wrap:anywhere}
+.invoice-workspace label{display:block;margin:12px 0}
+.invoice-workspace .settings-grid label{margin:0}
+.invoice-workspace input:not([type="checkbox"]),.invoice-workspace textarea{display:block;width:100%;min-width:0;max-width:100%;margin-top:6px;padding:9px 11px;border:1px solid #38516d;border-radius:10px;background:#0c192a;color:#e8f2ff}
+.invoice-workspace input[type="checkbox"]{margin-right:7px}
+.invoice-workspace textarea{font-family:ui-monospace,monospace;resize:vertical}
+.invoice-workspace details{margin:16px 0}
+.invoice-workspace summary{cursor:pointer}
+.invoice-workspace button{max-width:100%;white-space:normal}
+.invoice-workspace button:disabled{opacity:.65;cursor:not-allowed}
+.invoice-workspace :focus-visible{outline:2px solid #80b9ff;outline-offset:3px}
+#invoiceResult dl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px}
+#invoiceResult dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+#invoiceResult table{min-width:1000px}
+#invoiceResult td{white-space:normal;overflow-wrap:anywhere;max-width:340px;vertical-align:top}
+@media(max-width:600px){#invoiceResult dl{grid-template-columns:1fr}#invoiceResult dd{text-align:left;margin-bottom:8px}}

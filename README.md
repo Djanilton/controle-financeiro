@@ -105,3 +105,7 @@ As propostas MCP exigem vencimento e mês da ocorrência explícitos, moeda, esc
 Contrato vigente após resposta oficial do suporte: [MCP por observações](docs/MCP_OBSERVACOES.md). Os dois fluxos não se misturam; nada é aplicado automaticamente.
 
 Na revisão candidata da branch `feat/atualizacao-candidata`, capturas MCP somente de detalhes geram relatório de mapeamento, sem propostas nem cobertura de período. Contas e cartões têm vínculos manuais por ID apenas na revisão. Comparação por observações e carga Excel são independentes e nunca aplicam automaticamente a candidata. A consulta MCP direta do aplicativo permanece desabilitada. Veja [a preparação e os bloqueios da integração](docs/REVISAO_INTEGRACAO_MCP.md).
+
+## Conciliação de faturas (branch candidata, somente revisão)
+
+Área independente para comparar arquivos locais de fatura com uma fonte Minhas Finanças revisada, sem escrita nem aplicação financeira. Inclui demonstração fictícia, CSV/XLSX e subconjunto OFX validável; PDF e consultas MCP diretas continuam bloqueados. Contratos locais, limitações e instruções: [docs/CONCILIACAO_FATURAS.md](docs/CONCILIACAO_FATURAS.md).

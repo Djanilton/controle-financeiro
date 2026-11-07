@@ -22,7 +22,7 @@ Pasta informada: OneDrive/Djanilton/Finanças/Gerenciador financeiro/Despesas/Ap
 - receitas-2026-10-22-22-33-58.xlsx
 - transferências-2026-10-22-22-35-10.xlsx
 
-O conjunto Excel candidato exige os três nomes e considera registros de 01/10/2026 a 31/12/2044. O corte histórico usa exclusivamente o vencimento; pagamento/lançamento anterior não protege vencimentos elegíveis. Registros ativos ausentes na fonte permanecem presentes e são sinalizados como possíveis exclusões, sem excluir automaticamente. O envelope privado e coleções não transacionais são copiados integralmente.
+O conjunto Excel candidato exige os três nomes e considera registros de 01/10/2026 a 31/12/2044. O corte histórico usa exclusivamente o vencimento; pagamento/lançamento anterior não protege vencimentos elegíveis. No fluxo Excel completo, registros gerenciados ausentes podem ser removidos **somente da candidata** dentro da janela selecionada, após controles independentes e revisão; fontes protegidas ficam preservadas. No fluxo MCP por observações, ausências permanecem preservadas e nunca comprovam exclusão. O envelope privado e coleções não transacionais são copiados integralmente.
 
 Janela do plugin: 12 meses-calendário desde o primeiro dia do mês de referência. Outubro/2026 significa 01/10/2026–30/09/2027. A consulta deve usar vencimento, status todos, sem filtro de conta/categoria/cartão que oculte registros. É uma nova leitura completa da janela para atualização incremental local; não se presume API de delta global ou updatedSince. Outros meses ficam intactos. Transações efetivadas exigem detalhes de pagamento; ausências da janela bloqueiam para revisão, sem apagar.
 
@@ -242,3 +242,7 @@ O benchmark agora separa envio de buffer pelo Playwright do seletor por arquivo.
 Validação real detailsOnly concluída pelo usuário; não repetir. Relatório agora indica mapeamento, não candidata financeira pronta. Campos e mês original separados de janela/cobertura; base local vazia não atesta base real vazia. Contas e cartões recebem vínculos manuais por ID somente na revisão, sem criação ou associação por rótulo. Propostas monetárias no formato real continuam bloqueadas sem contrato individual.
 
 Fluxo Excel permanece independente: três relatórios, controles de quantidade/total e cobertura por vencimento, histórico anterior ao corte, proteção de manuais e módulos especiais, backup/ETag, desfazer e recuperação. Regressão usa fontes sintéticas; não se declarou base real conciliada ou substituição autorizada. Exportação/reabertura de 30 mil ocorrências mantêm revisão integral; clonagem transacional descartada removida sem suprimir sourceFields/undo. Evidências e limites de memória Linux, pergunta monetária e próxima ação em [REVISAO_INTEGRACAO_MCP.md](REVISAO_INTEGRACAO_MCP.md). Aplicação/escrita/exclusão MCP e sincronização continuam bloqueadas.
+
+## Conciliação de faturas independente — 07/11/2026
+
+A nova área de conciliação não alimenta nem aplica a candidata. Compara fontes locais revisadas por cartão/mês, com exportação privada e revisão humana. Ver [CONCILIACAO_FATURAS.md](CONCILIACAO_FATURAS.md). O fluxo Excel de substituição integral por vencimentos permanece inalterado e testado; MCP não foi liberado para substituição. Backup/undo, ETag, prévia de removidos/incluídos/preservados e bloqueio de conciliação permanecem no fluxo existente.
