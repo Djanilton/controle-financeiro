@@ -91,3 +91,21 @@ A reserva da construção parte do saldo disponível hoje e incorpora os lançam
 Em Configurações > Importações > Carga inicial e recuperação, **Ler planilha da construção no OneDrive** usa a localização privada configurada nas opções da construção. A aplicação valida os valores antes de importar e guarda uma cópia local anterior, disponível para exportação em Opções e cópias da construção. Nenhuma planilha original é regravada.
 
 Rascunhos de sessões diferentes têm cópias independentes. Recarregar uma aba restaura seu rascunho; cópias deixadas por outras sessões aparecem em **Rascunhos recuperáveis** nas opções da construção. Conflitos com a nuvem continuam exigindo revisão. O acompanhamento Excel inclui custos editados, programações, obrigações, cláusulas e histórico de anexos; o backup JSON conserva o estado integral para recuperação.
+
+## Atualização candidata por Excel ou pacote Minhas Finanças
+
+Em Configurações > Importações, **Atualização financeira candidata** prepara uma cópia para revisão, sem aplicar dados. A carga histórica usa os três relatórios Excel de 22/10/2026, período padrão de 12 meses desde o primeiro dia do mês atual (histórico selecionável explicitamente entre 01/10/2026 e dezembro/2044) e controles independentes de quantidade/total conferidos na fonte. Histórico, manuais, projeções e vínculos protegidos são preservados; ausência de cobertura ou conflito impede exportar a candidata.
+
+Minhas Finanças opera por comparação candidata de observações comprovadas; o fornecedor confirmou que não há snapshot estável ou histórico confiável de exclusões. Ausências são preservadas, nunca usadas para substituir períodos. Consulta MCP direta e importação automática do pacote antigo permanecem desabilitadas. Há prévia mensal, cópia anterior, relatório e revisão recuperável para reabrir no mesmo conteúdo de base, sem aplicação. O bloqueio de conciliação permanece ativo. Regras, limites e conferências antes da primeira atualização real estão em [Atualização candidata](docs/ATUALIZACAO_CANDIDATA.md).
+
+### Contrato da atualização candidata
+
+As propostas MCP exigem vencimento e mês da ocorrência explícitos, moeda, escala e semântica comprovadas por campo. Pacotes antigos sem essa evidência são bloqueados; date/referenceDate e inteiros não são interpretados por suposição. Excel exige controles independentes de contagem/total. MCP não permite substituição integral; propostas exigem detalhes, dinheiro definitivo e vínculo de contas comprovados, sem presumir equivalência entre valor nativo e apresentação. A consulta MCP direta permanece indisponível, e a PoC está separada. Veja [contrato, simulações anuais e limites de memória](docs/ATUALIZACAO_CANDIDATA.md).
+
+Contrato vigente após resposta oficial do suporte: [MCP por observações](docs/MCP_OBSERVACOES.md). Os dois fluxos não se misturam; nada é aplicado automaticamente.
+
+Na revisão candidata da branch `feat/atualizacao-candidata`, capturas MCP somente de detalhes geram relatório de mapeamento, sem propostas nem cobertura de período. Contas e cartões têm vínculos manuais por ID apenas na revisão. Comparação por observações e carga Excel são independentes e nunca aplicam automaticamente a candidata. A consulta MCP direta do aplicativo permanece desabilitada. Veja [a preparação e os bloqueios da integração](docs/REVISAO_INTEGRACAO_MCP.md).
+
+## Conciliação de faturas (branch candidata, somente revisão)
+
+Área independente para comparar arquivos locais de fatura com uma fonte Minhas Finanças revisada, sem escrita nem aplicação financeira. Inclui demonstração fictícia, CSV/XLSX e subconjunto OFX validável; PDF e consultas MCP diretas continuam bloqueados. Contratos locais, limitações e instruções: [docs/CONCILIACAO_FATURAS.md](docs/CONCILIACAO_FATURAS.md).

@@ -1,0 +1,199 @@
+# MCP: comparação candidata por observações — revisão de 03/11/2026
+
+## Contrato confirmado e consequência
+
+A resposta oficial às 12 perguntas, fornecida pelo usuário nesta tarefa, confirma: **não há snapshot estável, histórico confiável de exclusões ou cursor incremental oficial**. Consistência matemática de páginas, filtros, contagens ou totais não cria essas garantias. Não há substituição integral segura de uma janela usando somente MCP nas condições atuais. Não repetir consultas para tentar fabricar consistência.
+
+O modo MCP agora produz somente propostas em uma cópia. Uma ocorrência não observada permanece íntegra, classificada `NOT_OBSERVED_PRESERVED`; nunca vira exclusão, cancelamento ou conflito por ausência. Identidades conhecidas podem propor atualização; inclusões exigem identidade, vencimento, dinheiro e vínculos comprovados. Conflitos mantêm toda a candidata transacional igual à origem. Excel continua um fluxo independente de substituição controlada com os três relatórios, controles independentes e revisão humana. Selecionar Excel junto com MCP é rejeitado.
+
+Consulta MCP direta e aplicação/importação automática do pacote antigo estão desabilitadas. Nenhum código novo executa rede, autenticação, detalhes em lote ou repetição. PoC, OAuth e PIN não foram alterados. O bloqueio de conciliação, assinatura da base, cópia anterior e ETag da revisão permanecem; não existe ação de ativação.
+
+## Captura local, não um schema oficial novo
+
+`minhas-financas-observations-v1` é **um envelope local de captura/revisão**, não um formato prometido pelo fornecedor. Contém `profileId` string, `queries[]` com ferramenta, solicitação e páginas originais, e `details[]` com ferramenta, solicitação e resposta individual. Não converte arquivos antigos em provas de chamadas que não foram capturadas.
+
+```json
+{
+  "schema": "minhas-financas-observations-v1",
+  "profileId": "perfil-sintetico",
+  "queries": [{
+    "tool": "search_transactions",
+    "request": {"profileId":"perfil-sintetico","dateReference":"due","startDate":"2026-10-01","endDate":"2026-10-31","limit":50,"offset":0},
+    "pages": [{"request":{"profileId":"perfil-sintetico","dateReference":"due","startDate":"2026-10-01","endDate":"2026-10-31","limit":50,"offset":0},"payload":{"structuredContent":{"data":{"items":[]},"querySummary":{"dateReference":"due"}}}}]
+  }],
+  "details": []
+}
+```
+
+O exemplo vazio não comprova ausência de transações. `details` deve conter `tool=get_transaction_details`, solicitação com `profileId`, `transactionId`, `type`, `month`, e resposta com `data.profile.id`, `data.type`, `data.month`, `data.transaction.id/profileId`. A identidade deve coincidir com a solicitada e com a observação. `run_report(includeDetails=true)` não substitui esse objeto completo. Não buscar detalhes sem necessidade e autorização.
+
+Aceita JSON-RPC `result`, `structuredContent` ou JSON em `content` textual; se ambos forem fornecidos devem ser iguais. Erros usam códigos fixos sem copiar mensagens privadas para logs. O caminho de lista reconhecido é `data.items`/`data.transactions`; outros layouts permanecem bloqueados, sem adivinhação. Capturas locais não provam autenticidade do servidor.
+
+## De/para vigente
+
+| Evidência MCP | Proposta Controle Financeiro | Regra / limite |
+|---|---|---|
+| perfil + tipo + ID + occurrenceMonth + splitId opcional | `minhasFinancas` e chave composta | Strings opacas; mês explícito YYYY-MM. Não converter IDs numéricos nem derivar mês de pagamento/data. |
+| `data.transaction.dueDate` | `dueDate` | Calendário YYYY-MM-DD ou legado estrito YYYY-MM-DD HH:mm[:ss] validado, sem conversão de fuso; sem fallback de date/referenceDate. Outros timestamps ficam em conflito. |
+| `effectiveDate` | `paymentDate` | Calendário válido quando disponível; null explícito limpa a data proposta, ausência/formato desconhecido conserva a anterior com evidência desconhecida. Nunca determina situação. |
+| `createdAt` | `postedDate` | Cadastro/lançamento; calendário reconhecido, timestamps preservados sem truncamento. Não presumir UTC/fuso. |
+| `referenceDate` / `date` | Original privado | Referência da consulta, não vencimento nem competência da ocorrência. |
+| `presentationAmount` | `amount` e `cashAmount` assinados | Equivalente na moeda-base; não é obrigado a coincidir com amount nativo. Sem inversão de estorno/receita negativa. |
+| `amount`, `fullAmount`, `value` | Originais privados | Unidade maior confirmada, finalidades diferentes. fullAmount pode conter encargos/descontos; não substituir presentationAmount por fallback. |
+| `monetaryProjection.native.{minor,currency,scale}` | Originais privados | Moeda/escala nativas separadas da base; não assumir equivalência com data.currency/metadata.currency/transaction.currency. |
+| `baseCurrency`, `baseScale`, status do campo, `finalMinor` | Validação monetária | Modelo atual BRL/2. Exige valor fornecido compatível, complete=true, hasEstimates=false, finalMinor não nulo e estado definitivo do campo. Sem recalcular FX. |
+| `completed` boolean nos detalhes | Efetivada/Pendente | Ausência/null gera conflito; status textual variável e effectiveDate não são prova. |
+| `account.id`, `originAccount.id`, `destinationAccount.id` | `account` / `destination` com vínculo explícito | Reaproveita vínculo remoto já estabelecido ou seleção humana de conta local. Não associa pelo nome. Transferência é uma linha, com contas distintas. |
+| recurrence N/F/M em despesas | Avulsa/Fixa/Parcelada | Não inferir série. |
+| recurrence N/M/P em receitas/transferências | Avulsa/Fixa/Parcelada | Tabela diferente da despesa. |
+| originId | `minhasFinancas.originId` | Não usar como ID de ocorrência nem afirmar que seja seriesId. |
+| installmentNumber / installmentsCount | `installments` | Ambos inteiros coerentes; ausência fica desconhecida; campos parciais geram conflito. |
+| divisões, cartões, categorias | Preservados nos originais e nos campos locais anteriores | Referência explícita a cartão sem vínculo comprovado e múltiplas divisões sem mapeamento comprovado bloqueiam; nenhuma reconciliação nova de cartões/categorias é afirmada. |
+
+**Limitação monetária importante:** o formato exato de `monetaryStatus` e da projeção por campo não foi fornecido nessa resposta de suporte. O adaptador reconhece conservadoramente `transaction.monetaryProjection` com `baseCurrency/baseScale/complete/hasEstimates/finalMinor` e `transaction.monetaryStatus.presentationAmount` (ou `monetaryProjection.monetaryStatus.presentationAmount`) igual a `confirmed`/`definitive`. Essas são formas suportadas e testadas sinteticamente, **não confirmação de que o servidor real as emita**. Layout/enum diferente continua bloqueado. Uma projeção apenas agregada não confirma cada ocorrência. knownMinor e projectedMinor nunca substituem finalMinor. O fornecedor arredonda por operação, empates afastados de zero; o adaptador não arredonda nem refaz câmbio, apenas preserva e verifica resultados fornecidos. Base diferente de BRL/2 exige evolução explícita do modelo, não conversão aproximada.
+
+Originais de item, detalhes, contexto (incluindo moeda externa ao transaction), solicitação e campos anteriores de sourceFields ficam somente no relatório/candidata privados. Estados ABSENT/NULL/UNKNOWN/PRESENT e formatos de data são preservados; falhas têm código específico. Valores inválidos nunca viram zero. Nenhum original privado pertence ao GitHub ou aos logs.
+
+## Identidade, proteção e limites
+
+- ID local já vinculado é mantido. Mesmo ID em outros tipos/meses é outra ocorrência. originId não substitui ID da ocorrência.
+- Identidade remota duplicada localmente gera conflito. Observação repetida idêntica é deduplicada; observações diferentes da mesma identidade geram conflito, sem escolher a última.
+- Possível correspondência Excel ou outra origem no mesmo tipo/vencimento/contas exige revisão humana; uma captura parcial não prova unicidade global. Não há associação retroativa automática por descrição/valor. Uma interface para confirmar individualmente vínculo de ocorrência Excel ainda é pendente.
+- Preservam-se histórico anterior a 01/10/2026 por vencimento, manuais, edições locais, projeções, financiamento, investimento, construção, FGTS e demais fontes protegidas. Não mover registro local de fora da janela silenciosamente.
+- `nextOffset` determina o próximo pedido capturado; filtros devem permanecer iguais. Páginas posteriores ao encerramento, cursores inválidos e filtros contraditórios bloqueiam. Falta de páginas/metadados ou contagens mudando indica parcialidade/mutação; nunca remoção.
+- Busca até 50 itens/página; relatório até 100, 24 competências e 100 mil itens por consulta. Capturas parciais são observações, não cobertura completa.
+- Planejador puro de orçamento exige plano e consumo explicitamente informados. Sync 500/dia e 3000/mês; Sync Bank 1000/6000; Sync Bank Pro 2000/10000. Não identifica plano, não verifica saldo remoto e não executa chamadas.
+
+## Interface, recuperação e exportação
+
+Importações oferece comparador MCP de arquivo local, vínculos explícitos de contas, propostas, conflitos e número de não observados preservados. Controles de cobertura/completude são somente Excel. Relatórios mensais antes/depois são da cópia local, não totais globais do fornecedor. A revisão tem snapshot=false, complete=false, replacementAllowed=false e applyAllowed=false.
+
+A exportação MCP de candidata usa wrapper `mcp-observation-candidate-review-v1`, não backup ativável schema=1. Revisão recuperável mantém assinatura da base, undo e candidata. Revisões antigas de **substituição MCP** são rejeitadas; nenhum arquivo é apagado. Recuperação de observações exige IDs anteriores presentes, manuais intactos e protegidos preservados. Desfazer só troca a cópia. Fluxo Excel e suas revisões permanecem independentes.
+
+## Validação e próximo passo
+
+Testes sintéticos cobrem 12 meses, moedas/escalas/sinais, montante nativo distinto do apresentado, estimativas/null, ausência de datas, datas de calendário e timestamps, recorrências oficiais, parcelas, transferências, identidade composta, mudança/desaparecimento de páginas, preservação dos não observados, proteções, orçamento, recuperação e 30 mil ocorrências. Chromium verifica fluxo Excel, bloqueio do importador antigo e comparação MCP, vínculo explícito, exportação não ativável, mobile e base ativa intacta.
+
+**Não validado com fonte real nessa etapa:** formatos concretos de datas legadas, enums/layout monetário por campo, captura completa do contrato real no envelope local, vínculos privados de contas/ocorrências, capacidade do Windows e custo efetivo por plano. Nenhuma consulta real foi executada.
+
+Próximo passo mínimo: esclarecer/documentar o layout monetário por campo e os formatos de data efetivamente retornados; implementar a captura autorizada no envelope local sem inventar evidência; preparar catálogo de contas e revisão de vínculos. Planejar 12 meses via run_report respeitando seus limites e buscar detalhes só quando necessário e autorizado. Produzir **propostas observacionais**, nunca substituição completa pelo MCP. Primeira aplicação financeira requer projeto separado com revisão humana, backups, ETag e autorização; não faz parte do PR atual.
+
+### Medições desta revisão
+
+329 testes Node aprovados; oito scripts Chromium (incluindo três cenários de sessões de construção) aprovados. Ensaio final de 30 mil observações em Chromium Linux: prévia 4,807 s; revisão exportada 1,832 s; recuperação 0,485 s; RSS agregado máximo amostrado 1.639.592 KiB (~1,56 GiB), heap renderer máximo 198.711.064 bytes. Fonte sintética 38.213.433 bytes, revisão 92.979.427 bytes; base ativa intacta e bloqueio ativo. RSS é soma dos processos, não só heap JS, e a amostragem pode perder picos.
+
+No benchmark Node da segunda carga, um defeito de custo quadrático foi demonstrado no índice de contas: guardava o mesmo vínculo para cada ocorrência e recriava Set de milhares de entradas a cada linha. Set por ID remoto elimina somente repetições desse índice, mantendo todas as transações/originais. Tempo 24.106,8 → 4.848,4 ms, hash da candidata idêntico, undo igual. maxRSS 903.696 → 930.728 KiB: não se comprovou economia de RSS. Não comparar como melhoria de memória com o benchmark antigo de substituição, cujo contrato e tamanho da massa eram diferentes. Exportação/parse/clones ainda dominam memória; Windows não medido. Testes negativos de vínculos divergentes e edições locais permanecem aprovados.
+
+A revisão negativa também comprovou que uma referência explícita a cartão poderia ser conservada somente no original sem bloquear uma inclusão. Corrigido: CARD_LINK_UNCONFIRMED bloqueia a proposta até existir mapeamento de cartão; fontes remotas explicitamente ligadas a financiamento/investimento/construção/FGTS/contracheque/projeção são igualmente bloqueadas, além da proteção dos registros locais. Não há classificação por descrição.
+
+## Preparação da captura local — 02/11/2026
+
+PoC privada **2026.11.02.1**, isolada do PR: diário em memória das solicitações exatas de ferramentas e respostas JSON realmente recebidas, antes da interpretação de campos financeiros. Exporta o envelope local acima por POST, com Host/Origin/CSRF e checkbox específico de autorização para arquivo financeiro sensível. Não há download por GET nem salvamento financeiro automático. O diagnóstico sanitizado permanece separado em `_mcp_diagnosticos`; não colocar capturas nessa pasta nem no GitHub/suporte.
+
+Tokens, credenciais, cabeçalhos, sessão, PIN, recuperação e URLs não entram na captura. Erros de ferramenta não viram observações; texto JSON passa pelo mesmo filtro. Campos financeiros desconhecidos/nulos e tipos originais são mantidos sem normalização. Memória retida pode ser exportada mesmo após expiração do token, sem bearer(), refresh ou nova chamada. O formato pode ser aceito estruturalmente e ainda gerar conflitos legítimos de vencimento/dinheiro/vínculos; exportar não confirma esses campos.
+
+**Bloqueio vigente:** transporte de produção da nova PoC bloqueia OAuth/consultas reais por padrão, sem controle de reativação na interface desta entrega. Qualquer consulta futura exige autorização separada. `CAPTURE_NOT_RETAINED` não autoriza reconstruir solicitações pela interface, inventar respostas ou consultar de novo. A versão antiga não guardava todos os argumentos originais; troca de processo/atualização não preserva memória nem OAuth. Não foi declarado reaproveitamento de sessão antiga no Windows.
+
+Diagnóstico real sanitizado da versão 2026.10.29.2 lido sem novas consultas: dueDate/createdAt/referenceDate string TEXT_UNMAPPED; effectiveDate null; account objeto com id/description string; recurrence string; installmentNumber inteiro; monetaryProjection objeto com status string; moedas em data/metadata string. O vocabulário antigo omitia native/baseScale/completed/originId, portanto não permite concluir ausência desses campos reais. Coletor/matriz novos incluem esses nomes, sempre sem registrar valores. monetaryStatus e conteúdo exato dos campos monetários continuam não confirmados.
+
+**Validação:** 215 testes Python com sockets não loopback bloqueados, incluindo 12 de captura e teste contra o comparador real deste PR; 23 cenários Chromium (2 captura/bloqueio, 20 detalhes, 1 diagnóstico) aprovados com fontes sintéticas. A integração mantém base original, não observados, ausência de exclusões e applyAllowed/replacementAllowed=false. Instalação assinada 2026.10.30.1→2026.11.02.1, início/encerramento e rollback aprovados em diretórios temporários Linux com configuração sintética idêntica; PowerShell/Edge físico não foi executado.
+
+Atualização publicada somente na origem privada `_mcp_atualizacoes` da pasta permanente existente, com sequência 4, assinatura e hashes; arquivos/configurações e versões antigas preservados. O usuário utiliza **Atualizar Minhas Finanças MCP.cmd**, sem ZIP manual nem instalação paralela. A gravação na nuvem e a releitura do manifesto foram verificadas; isso não comprova sincronização/instalação no disco Windows. Guia privado `CAPTURA_PRIVADA.md` disponível na mesma pasta. Quando houver evidência elegível em memória, marcar consentimento e clicar **Salvar captura financeira privada existente**, escolhendo pasta privada local, preferencialmente fora do OneDrive. Sem memória elegível, parar sem nova consulta. A PoC não envia a captura a serviços externos.
+
+CI deste PR valida somente aplicativo/documentação. Código, instalador e testes Python da PoC permanecem fora do repositório público e foram testados separadamente, não apresentados como CI público da PoC.
+
+## Histórico: consulta única em 02/11/2026 — bloqueio superado em 03/11
+
+**Registro histórico, não é o bloqueio vigente:** em 02/11 a descrição publicada de get_transaction_details declara que, em MCP remoto, a leitura pode solicitar automaticamente atualização bancária das conexões existentes no perfil. A assinatura documenta profileId/transactionId/type/month; nenhum parâmetro oficial documentado impede esse efeito. Não editar transações não equivale a garantir leitura sem atualização bancária. Não inventar skipSync/noRefresh ou inferir que o perfil não possui conexões.
+
+Preparação offline isolada (`single_detail_trial.py` e testes privados) reutiliza detalhes/captura existentes. Política padrão rejeita por BANK_REFRESH_NOT_EXCLUDABLE mesmo com consentimento. Somente o provedor sintético dos testes simula uma garantia: consentimento específico e CSRF, alvo original inequívoco, uma tentativa serializada inclusive cliques concorrentes/timeout/NOT_FOUND/PROFILE_LOCKED; sem busca, paginação, troca de perfil, reconexão ou retry. Token/sessão permanecem e exportação reutiliza memória sem outra chamada. Não há endpoint real novo, botão liberado ou versão executável publicada; instalação privada 2026.11.02.1 preservada.
+
+Validação desta etapa: 222 testes Python com conexões não loopback negadas, incluindo 7 novos; 2 cenários Chromium de captura já existente/transporte real bloqueado. Testes sintéticos, sem credenciais pessoais nem consulta financeira real; não provam ausência de refresh do fornecedor ou execução no Windows físico.
+
+Pergunta ao suporte: “Existe modo cache-only/argumento oficial de get_transaction_details que garanta não solicitar sincronização/atualização bancária? Informem schema, comportamento sem cache e confirmação de ausência de fallback para refresh.” Não enviar dados privados. Somente após essa garantia e integração revisada: abrir iniciador, aproveitar sessão válida e ocorrência já conhecida, consentir e consultar uma vez; salvar pela captura existente. Sem memória/alvo/sessão, parar; não gerar buscas extras para completar o procedimento. Nenhuma ação Windows é necessária agora. PR #8 permanece rascunho; somente documentação desta avaliação entra no PR.
+
+
+## Regra vigente em 03/11/2026 — requestUpdateOpenFinance
+
+**Bloqueio contratual superado.** O fornecedor confirmou o parâmetro oficial em get_transaction_details/search_transactions/run_report: padrão true; false impede solicitar atualização bancária mesmo com cache vencido/ausente, sem fallback. As definições conectadas ao ChatGPT nesta execução anunciam o booleano e essa semântica. A preparação do snapshot cloud ainda ocorre, sem garantir snapshot estável ou histórico de exclusões.
+
+**PoC privada 2026.11.03.1:** conexão OAuth/catálogo/uma página de perfis exige consentimento próprio. Inicializar/atualizar/abrir/recarregar a página não consulta finanças. A conexão real da PoC deve anunciar explicitamente a propriedade booleana que aceita false; declarações do usuário, default ou additionalProperties não substituem essa evidência. Ausência/tipo incompatível/schema condicional não suportado/catálogo incompleto bloqueiam. As capacidades de três ferramentas são exibidas; somente detalhes é executável nesta etapa. O tools/list autenticado do transporte real da PoC **ainda não foi consultado nesta tarefa**, pois não usamos credenciais pessoais nem executamos consultas reais. Suporte no ChatGPT não é prova do catálogo de outra conexão.
+
+Detalhes exige outro consentimento, perfil autorizado selecionado e ID/tipo/mês originais explicitamente informados ou retidos; nenhum mês/ID é deduzido. A referência digitada é confirmação humana, comparada aos ecos da resposta; não é fabricada como resultado de busca. Cada ação tem uma tentativa serializada. Campo requestUpdateOpenFinance=false é inserido explicitamente e verificado antes da chamada, na serialização e no HTTP contra uma autorização vinculada aos argumentos. Se removido/trocado por true/string/0, a chamada é bloqueada antes do HTTP. Sem omissão silenciosa, downgrade, pesquisa, paginação financeira ou reconexão automática. Timeout/NOT_FOUND/rejeição/expiração encerram a ação. Após PROFILE_LOCKED, desbloqueio apenas na página oficial; nova ação para a MESMA referência exige novo consentimento/nonce de uso único, sem repetir OAuth válido ou consultar automaticamente.
+
+Captura reutilizada: grava a solicitação nova com false e resposta realmente recebida, com filtro de segurança, apenas por download consentido. Erros não viram registros financeiros, e timeout não gera resposta. Se não existe busca original, captura v1 tem queries=[]/details recebidos/capture.detailsOnly=true: não se sintetiza uma página de search_transactions nem se promete proposta/completude. Valores/datas/moedas desconhecidos continuam bloqueados no comparador. Nenhuma mudança no motor do PR #8 ou nas bases ativas nesta etapa.
+
+**Validação separada da PoC:** 239 testes Python com conexões fora de loopback negadas e 30 cenários Chromium sintéticos aprovados (7 novos, 20 detalhes, 2 captura e 1 diagnóstico). Cobertos catálogo ausente/string, default=true, remoção/mutação do campo no transporte, rejeição, cache ausente, timeout, PROFILE_LOCKED, NOT_FOUND, concorrência, consentimentos e expiração. Publicação assinada sequência 5, instalação/início/encerramento/rollback em temporários Linux preservaram configuração e código anterior. Execução real Windows/Edge e comportamento interno do fornecedor não comprovados por esses testes. Código PoC permanece fora do PR; CI público cobre aplicativo/documentação.
+
+**Procedimento mínimo:** Atualizar Minhas Finanças MCP.cmd na pasta permanente; conferir 2026.11.03.1; consentir conexão e autorizar OAuth na página oficial se necessário; conferir capacidade boolean do próprio catálogo; selecionar perfil e copiar referência original já conhecida; consentir e consultar uma vez; salvar pela captura privada existente com consentimento separado, preferencialmente fora do OneDrive. Sem referência original/capacidade/sessão válida, parar sem buscar/reconectar. Guia privado vigente CONSULTA_SEM_REFRESH.md. Atualização entre processos não transfere OAuth/memória, mas mantém configuração e versões anteriores; não envolve ZIP manual ou instalação paralela.
+
+## Captura real de detalhes 2026.11.03.1 — evidências e mapeamento
+
+O usuário confirmou uma chamada real bem-sucedida com `requestUpdateOpenFinance=false` e resposta `bankRefreshMayBeRequested=false`. A análise desta revisão usa **as evidências estruturais fornecidas**, sem ler/publicar a captura privada nem realizar novas chamadas. A captura tem `queries=[]`, `capture.detailsOnly=true`: não contém uma busca e não comprova cobertura, ausência ou inclusão de ocorrências.
+
+| Campo comprovado na ocorrência | Tratamento nesta revisão | Limite |
+|---|---|---|
+| `data.type/month/profile.id`, `data.transaction.id/profileId` | Conjunto oficial comparado à solicitação e ao perfil; aliases de tipo conhecidos | Caminhos alternativos ausentes não tornam identidade parcial; contradições conhecidas bloqueiam. Não foi possível provar por que a PoC anterior emitiu PARTIAL apenas pela lista de tipos. |
+| `transaction.dueDate` em `YYYY-MM-DD HH:mm` | Validação estrita de calendário/hora/minuto; extrai somente o dia de calendário, sem fuso | Não aceita datas impossíveis, segundos, offset ou fallback por date/referenceDate. |
+| `createdAt/referenceDate/effectiveDate` | Preservação integral dos originais; formato e presença distintos | Não promove timestamp a lançamento/pagamento confirmado; null não vira zero/data. |
+| `completed`, `recurrence`, `installmentNumber/installmentsCount` | Booleano, enum por tipo (despesa F = fixa), par de inteiros consistente | Ausência/enum desconhecido permanece bloqueado. |
+| `account.id`, `card.id`, `card.name` | IDs opacos preservados; nome do cartão reconhecido para apresentação | Nome não cria vínculo local; card.description não é obrigatório. |
+| `monetaryProjection.native/baseCurrency/baseScale/status/equivalentMinor/pendingReason/snapshotId` | Reconhecimento estrutural separado de liberação financeira | Tipos/valores de todos os subcampos e enums não foram comprovados pela mera presença. Não pressupõe unidade de amount/presentationAmount. |
+| `data.monetaryCoverage` e metadados associados | Inspecionados separadamente, sem mesclar escopos | complete/hasEstimates/finalMinor/pendingNative agregados não comprovam o valor individual. Mesmo total igual ou snapshotId igual não constitui correspondência suficiente. |
+| `monetaryStatus` ausente | Ausência reportada, não requisito de presença para reconhecer o novo formato | Novo formato continua bloqueado para propostas monetárias até comprovação de definitividade/escala/correspondência individual. |
+| Texto JSON e structuredContent equivalentes | Aceitos quando coerentes | Divergência entre formatos bloqueia a resposta. |
+
+### Validação detailsOnly
+
+A importação local agora produz `mcp-details-mapping-report-v1`, com campos aceitos/bloqueados, identidade, presença/tipo/formato e evidência de cobertura no escopo recebido. O relatório estrutural usa vocabulário fixo e não inclui IDs, valores financeiros ou descrições. `passed` significa captura estruturalmente utilizável; **não significa campos financeiros aprovados para importação**. Os originais permanecem apenas na captura privada; o diagnóstico não os reproduz.
+
+A prévia fica `mappingOnly=true`, com zero propostas, nenhuma exclusão e cópia candidata exatamente igual à base original, inclusive metadados. Exportar candidata é bloqueado; relatório/revisão privada continuam disponíveis. Reabrir uma revisão de mapeamento que altere a cópia é rejeitado. Bloqueios de conciliação, aplicação, escrita, substituição MCP e consulta direta permanecem. Nenhuma alteração na instalação privada é necessária para analisar a captura já salva.
+
+**Compatibilidade:** o formato monetário local legado continua aceito sob suas verificações anteriores; isto não comprova que o fornecedor o emita. O novo formato `equivalentMinor` é reconhecido, mas deliberadamente não autoriza propostas com cobertura apenas agregada. A correção da identidade também foi preparada no código isolado da PoC, sem republicar a instalação ou incluir a PoC no PR.
+
+**Próximo passo mínimo:** carregar a captura já existente nesta revisão para validar o relatório de mapeamento, sem chamada real. Para comparar ocorrências, será necessária uma captura contendo busca observada e detalhes correspondentes (não fabricados), além de comprovação monetária individual e vínculos explícitos de contas/cartões. Captura somente de detalhes não supre essa evidência. Não há substituição MCP de 12 meses autorizada.
+
+**Testes sintéticos:** oito regressões novas cobrem identidade oficial/alternativas/contradições, calendário legado inválido, preservação de timestamps, ambos os envelopes, cobertura agregada e metadados separados, flags de atualização, captura sem busca e recuperação adulterada. Suíte Node: 337 testes; oito scripts Chromium do aplicativo, com bloqueio de exportação detailsOnly e preservação da assinatura ativa. Não são validação financeira real. Código de diagnóstico PoC isolado: 240 testes Python e 20 cenários Chromium de detalhes, sem publicação de nova instalação.
+
+## Correção pontual da primeira captura: tipo singular e segundos
+
+A evidência adicional fornecida pelo usuário corrigiu dois detalhes da descrição anterior: a solicitação usa `type="despesa"`, a resposta usa `data.type="expense"` e o vencimento tem segundos (`YYYY-MM-DD HH:mm:ss`). O código anterior não reconhecia esse alias nem essa precisão. Não houve acesso à captura privada nem consulta real para reproduzir: a fixture utiliza somente conteúdo sintético.
+
+- `expense` normaliza para `expenses`, assim como `despesa`. Perfil, ID e mês continuam obrigatórios e precisam coincidir para `DETAIL_IDENTITY_CONFIRMED`; os caminhos alternativos ausentes não são exigidos. Contradições continuam bloqueadas.
+- Foram avaliadas as definições disponíveis de `get_transaction_details`/`search_transactions`, sem invocá-las: entradas enumeram `despesa/receita/transferencia`, mas o payload de saída é aberto (`data: unknown`), sem enum de tipos. Portanto, `income` e `transfer` singulares **não foram liberados por analogia**; faltam evidência ou contrato de saída. Os aliases anteriores de receita/transferência permanecem aceitos.
+- `YYYY-MM-DD`, `YYYY-MM-DD HH:mm` e `YYYY-MM-DD HH:mm:ss` são aceitos para vencimento somente com calendário válido; horas 00–23, minutos e segundos 00–59. Offset, Z, frações e campos malformados não são aceitos nesse formato legado. O relatório distingue `LEGACY_LOCAL_MINUTE` e `LEGACY_LOCAL_SECOND`.
+- `dueDate` fornece apenas o dia de calendário, sem conversão de fuso. `createdAt`, `referenceDate`, `effectiveDate` e demais originais permanecem intactos. A nova precisão não cria autorização monetária, vínculo, busca ou cobertura.
+
+### Conferir o JSON existente, sem nova consulta
+
+Na aplicação **local desta branch**, abra `Importar` → `Comparar observações do Minhas Finanças (arquivo local)`, selecione o JSON privado já salvo e clique em `Gerar prévia sem aplicar`. Use uma origem local isolada sem conectar ao OneDrive; não use importação normal/restauração de base. O arquivo não precisa ser editado nem enviado ao GitHub. Espere `DETAIL_IDENTITY_CONFIRMED`, vencimento aceito com `LEGACY_LOCAL_SECOND` e modo somente mapeamento, sem propostas. Valores e vínculos não comprovados permanecem bloqueados. Exportar candidata continua proibido nesse modo; o relatório de mapeamento pode ser conferido localmente. Esta verificação não requer iniciar a PoC ou repetir OAuth, PIN ou MCP.
+
+## Preparação consolidada — 06/11/2026
+
+O usuário validou a captura real detailsOnly no aplicativo após 731c11b: identidade confirmada, segundos reconhecidos, vínculos/valor individual bloqueados e base intacta. Essa pendência de reteste foi encerrada; não repetir a consulta. A revisão atual usa somente estruturas sintéticas.
+
+Interface agora distingue mapeamento de proposta/carga Excel, mostra LEGACY_LOCAL_SECOND, ausência de solicitação de refresh conforme evidência, campos aceitos/desconhecidos/bloqueados e mês original. Janela/totais financeiros não aparecem como cobertura de detailsOnly. Base local vazia não significa base publicada vazia. Exportação de candidata fica desabilitada nesse modo.
+
+Vínculos explícitos de contas e cartões estão disponíveis somente na revisão, por IDs, sem criar entidades ou associar nomes. Contradições impedem confirmação; IDs/vínculos estabelecidos são preservados. monetaryProjection real continua bloqueada para propostas quando faltar prova individual; agregados não suprem essa prova.
+
+PoC privada 2026.11.06.1 preparada e testada localmente, não disponibilizada/instalada: uma busca consentida de 5/10 ocorrências com false obrigatório no catálogo e HTTP, seguida de um detalhe escolhido e exportação com consentimentos separados; sem paginação ou retries automáticos. Aprovação de distribuição/consulta futura continua necessária. De/para de escopos monetários, pergunta ao fornecedor, proteções e benchmark em [REVISAO_INTEGRACAO_MCP.md](REVISAO_INTEGRACAO_MCP.md).
+
+## Captura real de receita: income e cobertura por ocorrência — 07/11/2026
+
+**Evidência fornecida pelo usuário:** primeira captura contendo busca recuperada (cinco ocorrências de 203 correspondentes) e um detalhe real coincidente, sem repetir a busca. A busca usa `receita`, o detalhe retorna `income`; perfil, ID e mês coincidem. Vencimento local com minutos, receita fixa M, completed=false, moedas nativa/base BRL e escala 2; projeção confirmed/equivalentMinor e flags includedInTotals=false/monthlySavings=true. Solicitação e resposta confirmam requestUpdateOpenFinance=false. Nenhuma aplicação financeira. Esta revisão não leu/publicou o JSON financeiro nem executou consultas.
+
+**Diagnóstico privado sanitizado verificado:** registra bloqueio por PIN e resposta de detalhes com DETAIL_IDENTITY_PARTIAL. Mostra data.monetaryCoverage como objeto e metadata.monetaryCoverage como lista. Os valores dos aliases e de kind foram confirmados pelo usuário; o sanitizador guarda estrutura, não esses valores. Campos e códigos foram verificados sem expor IDs, valores ou descrições.
+
+**Correção:** income passa a normalizar para incomes/receita no consumidor e no código isolado do diagnóstico Python. Os cinco campos oficiais coincidentes passam a confirmar a identidade, mesmo sem caminhos alternativos. Isso supera a pendência histórica de income acima. `transfer` singular continua desconhecido; nenhum alias foi inferido por analogia. A instalação privada existente e seus diagnósticos históricos não foram reescritos nem uma nova versão da PoC foi distribuída.
+
+Coberturas em objeto e listas são examinadas separadamente. `kind=detail.transaction` é reconhecido como declaração de escopo; `flagsConsistent` descreve consistência dos indicadores e `definitivenessVerified=false` distingue a falta de garantia contratual. Não se somam coberturas, não se completam campos entre entradas nem se usa igualdade de totais como prova de um valor individual. O layout real mantém MONETARY_SCOPE_UNCONFIRMED no exame monetário. A prioridade de proteção pode apresentar REMOTE_PROTECTED_SOURCE na comparação antes desse exame, sem significar liberação monetária.
+
+Somente o detalhe efetivamente recebido confirma uma identidade. Os outros quatro resumos permanecem com DETAIL_REQUIRED; date não vira dueDate, hasMore=true/totalCount=203 não viram snapshot/cobertura completa. Não há exclusão por ausência ou substituição de período.
+
+Flags financeiras originais são preservadas. Fontes com includedInTotals=false ou monthlySavings=true exigem revisão e não geram propostas comuns, inclusive quando o layout monetário local legado passa na validação; registros locais com essas flags também são protegidos. Null/tipo desconhecido não vira false. Isso não cria classificação de investimento por descrição nem reconcilia carteiras. Receita fixa M continua Fixa, e completed=false continua Pendente, nunca renda realizada. Contas/cartões permanecem sujeitos a vínculos por ID explícitos.
+
+**Pergunta contratual ainda necessária:** quais condições tornam equivalentMinor definitivamente atribuível à ocorrência quando metadata.monetaryCoverage declara kind=detail.transaction? Como complete/hasEstimates/pendingNative e a cobertura em data se relacionam com esse equivalente, inclusive para includedInTotals=false/monthlySavings=true? A declaração de kind confirma apenas escopo ou também definitividade? Não foi enviada mensagem ao fornecedor nesta tarefa.
+
+**Validação sintética:** sete regressões novas usam valores/IDs inventados, cinco resumos e um detalhe, envelopes estruturado/textual equivalentes, cobertura objeto/lista, minutos/segundos, flags e bloqueios; o Chromium testa carga sem erro de identidade, quatro detalhes ausentes e nenhuma proposta, com base ativa intacta. O aplicativo interpreta a estrutura informada, mas os bloqueios financeiros são resultados esperados, não candidata pronta. A leitura dos bytes do JSON privado nesta nova revisão continua não verificada; não é necessário repetir consultas para usar o arquivo existente.
+
+Regressão executada: 348 testes Node, oito scripts Chromium do aplicativo e 269 testes Python da fonte PoC isolada aprovados; git diff --check limpo. O CI público valida apenas aplicativo/testes/documentação do PR; a PoC permanece fora dele. Para usar a captura existente, basta relê-la na versão local atualizada da branch, com o período de comparação adequado. Não repetir busca, OAuth, PIN ou detalhes para corrigir esse alias. Bloqueios financeiros esperados não são erros de formato/identidade e não devem ser removidos para produzir uma candidata.
