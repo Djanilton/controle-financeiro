@@ -2,7 +2,7 @@
 
 ## Escopo
 
-A área **Histórico INSS** lê múltiplos relatórios oficiais locais (PDF com texto ou TXT) e, opcionalmente, somente a aba INSS de uma cópia da planilha. Reutiliza `pdfText`/`StatementCore.pdfLines` e XLSX existentes. O relatório é mantido em memória: **não aplica**, não altera o arquivo, não substitui históricos, não sincroniza ou grava saldos. O parser INSS normal também marca as fontes como `reviewOnly`; `StatementCore.apply` preserva integralmente os registros anteriores de INSS e orienta a revisão, em vez de copiar o desconto do contracheque para duas contribuições. FGTS/NEOS preservam seus fluxos anteriores.
+A seção **Investimentos → INSS — Histórico e conferência** amplia a tabela INSS existente e lê múltiplos relatórios oficiais locais (PDF com texto ou TXT) e, opcionalmente, somente a aba INSS de uma cópia da planilha. Reutiliza `pdfText`/`StatementCore.pdfLines` e XLSX existentes. Não existe menu ou tabela financeira independente de INSS. A mesma tabela recebe os campos de prévia, mantidos em memória: **não aplica**, não altera o arquivo, não substitui históricos, não sincroniza ou grava saldos. O parser INSS normal também marca as fontes como `reviewOnly`; `StatementCore.apply` preserva integralmente os registros anteriores de INSS e orienta a revisão, em vez de copiar o desconto do contracheque para duas contribuições. FGTS/NEOS preservam seus fluxos anteriores.
 
 ## Evidências separadas
 
@@ -48,7 +48,7 @@ Os saldos históricos INSS continuam disponíveis como referência, sem reescrit
 
 ## Testar sem dados reais
 
-Abrir `?area=inssHistory` na execução local e clicar **Demonstração fictícia INSS**. O exemplo mostra remuneração anterior ao Ano Civil, consolidado distinto e diferença de contribuições. Testes Node reproduzem conflito entre fontes, preservação histórica, março/2020, teto, arredondamento, 13º separado, bloqueio de vínculos/rateio, marco documental e indeterminado. Dados reais não integram fixtures ou CI.
+Abrir `?area=investments` na execução local e selecionar **INSS — Histórico e conferência** e clicar **Demonstração fictícia INSS**. O exemplo mostra remuneração anterior ao Ano Civil, consolidado distinto e diferença de contribuições. Testes Node reproduzem conflito entre fontes, preservação histórica, março/2020, teto, arredondamento, 13º separado, bloqueio de vínculos/rateio, marco documental e indeterminado. Dados reais não integram fixtures ou CI.
 
 ### Contextos opcionais de cálculo
 
@@ -59,3 +59,23 @@ O campo de JSON da tela aceita uma lista de contextos privados explicitamente re
 ```
 
 `baseMinor` não vem automaticamente da remuneração. `linksConfirmed` exige conferência real do contexto; não significa que o sistema resolveu rateio de vários vínculos. `discountPeriodConfirmed` declara que o desconto COSERN pertence à mesma incidência mensal; sem isso, a diferença contra o cálculo fica desconhecida. O relatório separa cada cálculo mensal/13º e mostra tabela, método, política e diferenças autorizadas; não soma 13º com mensal nem confirma recolhimento. O aviso `THIRTEENTH_PERIOD_REQUIRES_SEPARATE_MAPPING` impede tratar rubricas 13º reconhecidas no texto como competência mensal comum. A fonte original fica preservada para o mapeamento específico posterior.
+
+
+## Compatibilidade da tabela existente — especificação consolidada
+
+A coleção ativa continua sendo `data.sourceTables.INSS`. Não houve migração de dados nem uma segunda coleção financeira persistida. O item “Histórico INSS” saiu do menu principal; links antigos são redirecionados a Investimentos. A tabela e os filtros de período/instituição/situação foram reaproveitados. Ação “INSS — Histórico e conferência” seleciona explicitamente INSS sem alterar o intervalo de datas.
+
+| Campo legado mantido | Semântica e compatibilidade |
+|---|---|
+| Mês | Competência original; formatos usados por importadores são preservados. |
+| Remuneração Cosern | Histórico original; não é renomeado ou substituído pela classificação CNIS. |
+| Remuneração INSS | Campo legado cuja origem/semântica individual pode variar; não é migrado automaticamente para “apurada” ou “consolidada”. |
+| Contribuição Cosern | Valor histórico preservado; desconto de contracheque somente quando sua origem está comprovada. |
+| Contribuição INSS | Histórico independente ou legado, sem cópia do desconto COSERN. |
+| Saldo | Histórico informativo, com a compatibilidade de cálculo já existente; não integra patrimônio disponível ou resgatável. |
+
+Campos adicionados à apresentação/prévia: **Remuneração Apurada CNIS**, **Remuneração Consolidada CNIS**, **Contribuição INSS calculada**, **Diferença calculada × COSERN**, **Fonte documental**, **Situação da conferência**, e remuneração histórica informada sem classificação anual. Nenhum campo legado é renomeado, removido ou preenchido por inferência. IDs, fórmulas representadas, metadados, anexos e campos extras permanecem nas linhas da candidata. Competências antigas ausentes das novas fontes permanecem presentes. Competência existente duplicada ou novo campo divergente gera conflito, sem associação/sobrescrita automática.
+
+`InssHistory.previewTable` produz cópia de revisão com antes/depois e `applyAllowed:false`. A tela mostra as propostas na própria tabela, identificadas como não aplicadas; “Descartar somente a prévia” recupera a apresentação ativa. Alteração concorrente da base invalida a apresentação da prévia. Aplicação segue indisponível: exige migração validada, backup, ETag e autorização específica. Não existe ação que aplique essa prévia por clique nesta versão.
+
+“Conferir PDFs INSS no OneDrive” usa a pasta de investimentos configurada privadamente, somente sob demanda. Lista a raiz, verifica identidade/ETag antes e depois da leitura e reaproveita fontes inalteradas **nesta sessão**. Não exige selecionar repetidamente os mesmos três PDFs. Configuração, sessão Microsoft e permissões reais de leitura no Windows ainda precisam de validação. Cache persistente de fontes INSS entre sessões não foi criado como segunda série financeira; reabrir sem uma prévia disponível pode requerer nova leitura autorizada.

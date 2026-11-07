@@ -112,3 +112,27 @@ Botão **Consultar novamente no Minhas Finanças** permanece desabilitado e não
 Para habilitar futuramente: confirmação oficial da política sem refresh e schema do transporte efetivo; OAuth próprio com PKCE S256/state/CSRF, sem credenciais do ChatGPT; preferir sessão protegida em backend intermediário ou a PoC isolada já autorizada, conforme CORS/redirects, sem segredos no aplicativo público; consentimento por consulta com cartão/perfil/mês fixos e orçamento explícito de páginas; sem retentativa/reconexão automática. Valores e cobertura precisam de contrato verificável. O backend, se necessário, deverá manter tokens fora do navegador/repositório, sessão segura e escopo de leitura, sem endpoints de escrita. Não foi implantado servidor ou nova autenticação nesta etapa. Importação manual permanece alternativa funcional.
 
 Pergunta adicional pronta ao fornecedor: **get_credit_card_transactions pode garantir contratualmente que uma chamada não solicita atualização Open Finance, mesmo sem cache, e expor essa capacidade no tools/list do transporte OAuth próprio? Quais evidências de filtros, paginação e cobertura acompanham essa resposta?** Não enviada automaticamente.
+
+## Consolidação de navegação, fontes e relatório
+
+Menu **Conciliação de faturas** imediatamente após Despesas. **Configurações → Importações → IMPORTAR FATURAS CARTÃO** abre a mesma tela. O roteiro indica cartão/mês → fatura → fonte MF → comparação → marcações → nova revisão/histórico. Resultados são levados à vista após Comparar/Demonstração; dados técnicos continuam recolhidos. Há busca, filtro por situação e ordenação (prioridade por padrão, data da compra, diferença conhecida ou descrição). O índice original de cada linha é preservado ao filtrar/ordenar, para não aplicar marcação a outra ocorrência.
+
+**Buscar fatura no OneDrive** lista apenas a pasta privada configurada, por clique, e exige selecionar arquivo/versão. Lê IDs/ETags antes/depois, bloqueando identidade errada ou versão alterada. Não baixa ao abrir a tela, não altera arquivos e não escolhe automaticamente um arquivo quando há candidatos. Cartão/mês são conferidos no documento e pelo usuário, nunca garantidos pelo nome. Arquivo local permanece alternativa. Caminhos/permissões no navegador Windows ainda não foram validados.
+
+### Adaptador Itaú XLSX
+
+Selecionar explicitamente **Itaú XLSX — layout validado** e confirmar escopo/cartão/mês/BRL antes da leitura. O adaptador detecta os cabeçalhos Data, Lançamento, Parcelamento, Valor e Número do cartão por conteúdo, após o preâmbulo; não fixa a linha 14. Verifica resumo de valor/vencimento, calendário, datas seriais Excel (sistema 1900; dia fictício 60 e sistema 1904 bloqueados), valores em reais e parcelas `N de M`/`Parcela N de M`. Mantém titulares, nomes, físicos/virtuais/adicionais nos campos originais, sem inventar vínculo com cartão MF.
+
+Créditos/cancelamentos/estornos são negativos; tarifas/juros/IOF positivos são distinguidos por termos reconhecidos. Pagamento negativo da própria fatura, incluindo o rótulo bancário de pagamento por boleto observado, não é compra/estorno e fica separado. Notas textuais finais sem dados financeiros são preservadas; linhas incompletas de lançamentos, parcelas/datas inválidas e total divergente bloqueiam o layout. **A soma de compras/créditos/encargos, sem pagamento da fatura, precisa coincidir com o total oficial.** Não se presume que isso funcionará para saldo anterior ou toda variante bancária.
+
+Validação privada somente leitura reconheceu o arquivo disponibilizado e conciliou a soma com seu total oficial, sem publicar nomes, valores, datas pessoais, números de cartão ou o arquivo. Isso **não é** uma conciliação real completa com o Minhas Finanças. O total independente verificado não cria contagem independente, snapshot ou cobertura integral: `control.independent` continua false, e nenhum pacote de substituição é gerado.
+
+IDs `document-row` identificam apenas a linha da cópia por SHA-256/posição original. Não são IDs bancários/MF e não são usados como identificador compartilhado. Substituir o arquivo altera o hash e exige nova revisão de identidade. Os documentos originais permanecem onde estavam.
+
+### Recorrências revisadas e exportação
+
+`recurringAliases` recebe regras privadas com descrições exatas dos dois lados, cartão/mês, ciclo confirmado, tolerância de 0–7 dias e revisão explícita. Valor, natureza e parcela devem coincidir, datas devem estar no ciclo revisado e a associação precisa ser um-para-um. Ciclos/cartões diferentes não são associados; multiplicidade é ambígua. Resultado é **Provável correspondência recorrente**, sem vínculo/aplicação ou confirmação automática de correção.
+
+Exportação XLSX privada, com consentimento separado, gera quatro abas: **Conciliação**, **Resumo**, **Banco original**, **Minhas Finanças original**. Mantém valores originais e minor, moeda/escala, motivos e acompanhamento/data da marcação; unidades monetárias só são apresentadas após validação de moeda/escala. A aba Conciliação mantém a ordem de prioridade. Fórmulas não são derivadas de descrições ou documentos. Não importa o XLSX de volta como alteração financeira. O JSON privado continua disponível.
+
+Sincronização do histórico e corte de JSONs: [MIGRACAO_DADOS_PRIVADOS.md](MIGRACAO_DADOS_PRIVADOS.md). Situação de todos os requisitos, incluindo pendências reais: [MATRIZ_CONSOLIDACAO.md](MATRIZ_CONSOLIDACAO.md).

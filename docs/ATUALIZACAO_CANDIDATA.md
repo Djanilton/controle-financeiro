@@ -246,3 +246,9 @@ Fluxo Excel permanece independente: três relatórios, controles de quantidade/t
 ## Conciliação de faturas independente — 07/11/2026
 
 A nova área de conciliação não alimenta nem aplica a candidata. Compara fontes locais revisadas por cartão/mês, com exportação privada e revisão humana. Ver [CONCILIACAO_FATURAS.md](CONCILIACAO_FATURAS.md). O fluxo Excel de substituição integral por vencimentos permanece inalterado e testado; MCP não foi liberado para substituição. Backup/undo, ETag, prévia de removidos/incluídos/preservados e bloqueio de conciliação permanecem no fluxo existente.
+
+## Fontes privadas e novas datas de exportação — consolidação
+
+Os nomes datados antigos desta documentação são referências históricas e nomes internos canônicos, não obrigação de repetir uma exportação antiga. `CandidateSources.excelReference` reconhece os três padrões de exportação com nova data/hora válidas, mantendo validação de cabeçalhos, vencimento explícito, valores e controles independentes; conserva o nome real em `sourceDocumentName`. Não aceita nomes arbitrários, datas impossíveis ou três arquivos do mesmo tipo.
+
+A ação de relatórios de despesas/receitas/transferências no OneDrive prepara os três arquivos na candidata, sem aplicar a cauda diretamente na rotina. Fontes ausentes, versões empatadas/sem ETag ou leitura alterada bloqueiam a preparação; seleção local continua alternativa. O perfil, cobertura, período e controles independentes exigem revisão própria. Datas/nomes corretos não comprovam completude. O motor de substituição por vencimento e seus bloqueios de MCP não foram relaxados.

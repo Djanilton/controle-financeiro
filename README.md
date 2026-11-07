@@ -110,4 +110,6 @@ Na revisão candidata da branch `feat/atualizacao-candidata`, capturas MCP somen
 
 Área independente para comparar arquivos locais de fatura com uma fonte Minhas Finanças revisada, sem escrita nem aplicação financeira. Inclui demonstração fictícia, CSV/XLSX e subconjunto OFX validável; PDF e consultas MCP diretas continuam bloqueados. Contratos locais, limitações e instruções: [docs/CONCILIACAO_FATURAS.md](docs/CONCILIACAO_FATURAS.md).
 
-Histórico INSS em revisão independente: [INSS_HISTORICO.md](docs/INSS_HISTORICO.md). As marcações de faturas agora ficam em histórico privado separado no navegador, sem sincronização ou alterações nas transações.
+INSS integrado à tabela existente em **Investimentos → INSS — Histórico e conferência**: [INSS_HISTORICO.md](docs/INSS_HISTORICO.md). As marcações de faturas agora ficam em histórico privado separado no navegador, sem sincronização ou alterações nas transações.
+
+Especificação consolidada e situação de todas as frentes: [MATRIZ_CONSOLIDACAO.md](docs/MATRIZ_CONSOLIDACAO.md). Configuração dos diretórios é privada; não há corte automático para os novos JSONs ou sincronização do histórico de faturas.

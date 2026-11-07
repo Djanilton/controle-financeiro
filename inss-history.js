@@ -54,5 +54,25 @@ function compare(sources=[],workbook=[],options={}){
 }
 function transition(rows){const independent=rows.filter(r=>r.contributionInss?.independentProven&&r.cosernDiscount?.independentProven&&Number.isSafeInteger(r.contributionInss.minor)&&Number.isSafeInteger(r.cosernDiscount.minor));const matches=independent.filter(r=>r.contributionInss.minor===r.cosernDiscount.minor);return {status:'UNCONFIRMED',month:null,observedIndependentEqualMonths:matches.map(r=>r.month),reason:'Igualdade numérica não prova uma transição; exige documento com marco de vigência.'}}
 function documentedTransition(evidence){return evidence?.kind==='contribution-transition'&&validMonth(evidence.month)&&typeof evidence.source==='string'&&evidence.source.trim()&&evidence.reviewed===true?{status:'DOCUMENTED',month:evidence.month,source:evidence.source}:{status:'UNCONFIRMED',month:null}}
-const api={TABLES,parse,calculate,compare,transition,documentedTransition,minor};if(typeof module==='object'&&module.exports)module.exports=api;else root.InssHistory=api;
+
+// Candidate overlay for the EXISTING INSS table. Never mutates or renames a legacy field.
+const LEGACY_FIELDS=['Mês','Remuneração Cosern','Remuneração INSS','Contribuição Cosern','Contribuição INSS','Saldo'];
+const REVIEW_FIELDS=['Remuneração Apurada CNIS','Remuneração Consolidada CNIS','Contribuição INSS calculada','Diferença calculada × COSERN','Fonte documental','Situação da conferência'];
+function previewTable(baseRows,report,monthOf){
+ if(!Array.isArray(baseRows)||report?.schema!=='inss-history-review-v1')throw Error('INSS_TABLE_PREVIEW_INVALID');
+ const C=root.FinanceCore||(typeof require==='function'?require('./app-core.js'):null);
+ const getMonth=monthOf||((r)=>C.excelDate(r['Mês']??r.Data).slice(0,7));
+ const rows=clone(baseRows),byMonth=new Map(),conflicts=[],changes=[];
+ rows.forEach((row,index)=>{const month=getMonth(row);if(!validMonth(month))return;if(!byMonth.has(month))byMonth.set(month,[]);byMonth.get(month).push(index)});
+ for(const evidence of report.rows){const indices=byMonth.get(evidence.month)||[];if(indices.length>1){conflicts.push({month:evidence.month,code:'EXISTING_MONTH_AMBIGUOUS'});continue}
+  const index=indices[0]??rows.length,old=rows[index],row=old||clone(evidence.workbookOriginal||{'Mês':evidence.month+'-01'}),next=clone(row);
+  const monthly=(evidence.calculations||[]).filter(c=>c.periodKind==='monthly'&&c.status==='CALCULATED');
+  const fields={'Remuneração Apurada CNIS':Number.isSafeInteger(evidence.assessedMinor)?evidence.assessedMinor/100:null,'Remuneração Consolidada CNIS':Number.isSafeInteger(evidence.consolidatedMinor)?evidence.consolidatedMinor/100:null,'Contribuição INSS calculada':monthly.length===1?monthly[0].contributionMinor/100:null,'Diferença calculada × COSERN':monthly.length===1&&monthly[0].differenceFromCosernMinor!==null?monthly[0].differenceFromCosernMinor/100:null,'Fonte documental':[...new Set(evidence.origins.map(o=>o.source))].join('; '),'Situação da conferência':evidence.conflicts.length?'Necessita revisão':'Prévia documental — aplicação bloqueada'};
+  if(Number.isSafeInteger(evidence.reportedMinor))fields['Remuneração histórica informada CNIS']=evidence.reportedMinor/100;
+  for(const [field,value] of Object.entries(fields)){if(value===null||value==='')continue;if(own(next,field)&&next[field]!==null&&next[field]!==''&&JSON.stringify(next[field])!==JSON.stringify(value)){conflicts.push({month:evidence.month,field,code:'REVIEW_FIELD_CONFLICT'});continue}if(!own(next,field)||next[field]!==value){changes.push({month:evidence.month,field,before:own(next,field)?clone(next[field]):null,after:value});next[field]=value}}
+  if(!old){rows.push(next);byMonth.set(evidence.month,[index])}else rows[index]=next;
+ }
+ return {schema:'inss-table-candidate-v1',applyAllowed:false,sourceUnchanged:true,before:clone(baseRows),rows,changes,conflicts,added:rows.length-baseRows.length,preserved:baseRows.length,legacyFields:LEGACY_FIELDS,reviewFields:REVIEW_FIELDS};
+}
+const api={TABLES,parse,calculate,compare,transition,documentedTransition,minor,previewTable,LEGACY_FIELDS,REVIEW_FIELDS};if(typeof module==='object'&&module.exports)module.exports=api;else root.InssHistory=api;
 })(globalThis);

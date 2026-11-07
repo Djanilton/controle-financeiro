@@ -12,7 +12,9 @@ function money(value){
  check(/^-?(?:\d+(?:[.,]\d{1,2})?|\d{1,3}(?:\.\d{3})+,\d{1,2})$/.test(text),'Valor monetário ausente ou ambíguo.');
  return Core.number(text);
 }
+function excelReference(name){if(FILES[name])return name;const m=Core.normalize(String(name)).match(/^(despesas|receitas|transferencias)-(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})\.xlsx$/);if(!m||!validDate(m[2]+'-'+m[3]+'-'+m[4])||Number(m[5])>23||Number(m[6])>59||Number(m[7])>59)return null;return Object.keys(FILES).find(key=>Core.normalize(key).startsWith(m[1]+'-'))||null}
 function fromExcelBook(book,XLSX,name,control=null){
+ const originalName=name;name=excelReference(name);
  const kind=FILES[name];check(kind,'Relatório Excel não corresponde à carga histórica selecionada.');
  check(book?.SheetNames?.length===1,'Relatório deve conter uma única aba; seleção ambígua bloqueada.');
  const sheet=book.Sheets[book.SheetNames[0]],rows=XLSX.utils.sheet_to_json(sheet,{defval:'',raw:true});
@@ -38,13 +40,13 @@ function fromExcelBook(book,XLSX,name,control=null){
   const installment=description.match(/\s+(\d+)\s*\/\s*(\d+)\s*$/);
   if(!t.installments&&installment&&Core.normalize(t.recurrence).includes('parcel')){check(Number(installment[1])>0&&Number(installment[2])>=Number(installment[1]),'Número de parcela inválido.');t.installments=Number(installment[1])+'/'+Number(installment[2]);}
   t.effectiveDateKnown=!!t.paymentDate;t.date=t.paymentDate||t.dueDate;
-  t.source=name;t.sourceFields=structuredClone(raw);
+  t.source=name;t.sourceDocumentName=originalName;t.sourceFields=structuredClone(raw);
   return t;
  });
  const total=transactions.reduce((sum,t)=>sum+Math.round(t.cashAmount*100),0);
  check(Number.isSafeInteger(total),'Total excede a precisão monetária suportada.');
  if(control){check(Number.isInteger(control.expectedCount)&&control.expectedCount===transactions.length,'Contagem difere do controle independente da fonte.');check(Number.isSafeInteger(control.expectedTotalMinor)&&control.expectedTotalMinor===total,'Total difere do controle independente da fonte.');}
- return {schema:'candidate-source-v1',source:'excel',name,transactions,observedCount:transactions.length,observedTotalMinor:total,
+ return {schema:'candidate-source-v1',source:'excel',name,originalName,transactions,observedCount:transactions.length,observedTotalMinor:total,
   expectedCount:control?.expectedCount??transactions.length,expectedTotalMinor:control?.expectedTotalMinor??total,
   independentControl:!!control,warnings:[...warnings]};
 }
@@ -63,5 +65,5 @@ function fromPacket(packet,validated=null){
  return {schema:'candidate-source-v1',source:'plugin',replacementAllowed:false,applyAllowed:false,legacyNormalizedOnly:true,transactions:normalized.rows,profileId:String(packet.profileId),
   from:packet.from,to:packet.to,dateReference:'due'};
 }
-const api={FILES,validDate,money,fromExcelBook,fromPacket,fromObservations:(rows,packet,options)=>Observations.compare(rows,packet,options)};root.CandidateSources=api;if(typeof module!=='undefined')module.exports=api;
+const api={FILES,excelReference,validDate,money,fromExcelBook,fromPacket,fromObservations:(rows,packet,options)=>Observations.compare(rows,packet,options)};root.CandidateSources=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);
