@@ -20,11 +20,11 @@ const similar=t=>JSON.stringify([t.kind,t.dueDate,Core.normalize(t.account),Core
 const remote=t=>MF.remoteKey(t);
 const inside=(t,p)=>validDate(t.dueDate)&&t.dueDate>=p.from&&t.dueDate<=p.to;
 function totals(rows){const groups=new Map();for(const t of rows){if(projection(t)||!validDate(t.dueDate))continue;const key=JSON.stringify([t.dueDate.slice(0,7),t.kind,t.status||'Não informado']);if(!groups.has(key))groups.set(key,{month:t.dueDate.slice(0,7),kind:t.kind,status:t.status||'Não informado',count:0,totalMinor:0,unknownAmounts:0});const g=groups.get(key),amount=minor(valueOf(t));g.count++;if(amount!==null)g.totalMinor+=amount;else g.unknownAmounts++}return [...groups.values()].sort((a,b)=>stable(a).localeCompare(stable(b)))}
-function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,accountLinks=[],includeLegacyPlanilha=false}={},ownedBase=false){
+function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,accountLinks=[],cardLinks=[],includeLegacyPlanilha=false}={},ownedBase=false){
  if(!base?.data||!Array.isArray(base.data.transactions)||!base.manual||!Array.isArray(base.manual.transactions))throw Error('Envelope de base inválido.');
  if(!excel.length&&!packet)throw Error('Selecione fonte completa para substituição.');
  const annual=window12(asOf),excelPeriod=period(selected||annual);if(excel.length&&excelPeriod.to>'2044-12-31')throw Error('Excel limitado a dezembro de 2044.');
- if(packet){if(excel.length)throw Error('Não misture substituição Excel e observações MCP.');return observationPreview(base,packet,excelPeriod,accountLinks,ownedBase)}
+ if(packet){if(excel.length)throw Error('Não misture substituição Excel e observações MCP.');return observationPreview(base,packet,excelPeriod,accountLinks,cardLinks,ownedBase)}
  const profile=String(coverage?.profileId||'');if(!profile)throw Error('Informe o perfil da fonte.');
  const previousProfile=base.data.candidateUpdate?.profileId||base.data.minhasFinancas?.profileId;if(previousProfile&&String(previousProfile)!==profile)throw Error('Perfil diferente da base gerenciada.');
  if(excel.length){if(excel.length!==3||new Set(excel.map(f=>f.name)).size!==3||excel.some(f=>!FILES[f.name]))throw Error('Exigem-se os três relatórios Excel.');if(coverage?.complete!==true||coverage.dateReference!=='due'||String(coverage.profileId)!==profile||!validDate(coverage.from)||!validDate(coverage.to)||coverage.from>excelPeriod.from||coverage.to<excelPeriod.to||stable([...(coverage.types||[])].sort())!==stable([...TYPES].sort()))throw Error('Completude, perfil, tipos e cobertura do Excel devem ser confirmados.');}
@@ -60,12 +60,12 @@ function preview(base,{excel=[],packet=null,asOf,period:selected,coverage=null,a
  if(conflicts.length)summary={removed:0,included:0,preserved:base.data.transactions.length+base.manual.transactions.length,conflicting:conflicts.length};
  return {schema:'controlled-update-preview-v2',passed:!conflicts.length,activeUnchanged:true,window:sourcePeriod,operations,summary,changes:{added:summary.included,updated:0,unchanged:summary.preserved,protected:summary.preserved},pluginChanges:null,conflicts,possibleDeletions:managedBefore.filter(t=>!newIds.has(t.id)).map(t=>({id:t.id,description:t.description,dueDate:t.dueDate,kind:t.kind,reason:'Remoção candidata por substituição completa confirmada.'})),before:totals([...base.data.transactions,...base.manual.transactions]),after:totals([...candidate.data.transactions,...candidate.manual.transactions]),undo:ownedBase?base:clone(base),candidate};
 }
-function observationPreview(base,packet,window,accountLinks,ownedBase){
+function observationPreview(base,packet,window,accountLinks,cardLinks,ownedBase){
  const localIds=[...base.data.transactions,...base.manual.transactions].map(t=>t.id);if(localIds.some(id=>typeof id!=='string'||!id)||new Set(localIds).size!==localIds.length)throw Error('LOCAL_IDENTITY_AMBIGUOUS');
  const priorProfile=base.data.candidateUpdate?.profileId||base.data.minhasFinancas?.profileId;
  if(priorProfile&&priorProfile!==packet.profileId)throw Error('Perfil diferente da base gerenciada.');
- const result=Sources.fromObservations(base.data.transactions,packet,{window,accountLinks,protectedRecords:base.manual.transactions,isProtected:protectedRow});
- const candidate=clone(base);candidate.data.transactions=result.rows;if(result.passed&&!result.mappingOnly)candidate.data.mcpObservationReview={schema:'mcp-observation-review-v1',profileId:packet.profileId,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false};
+ const result=Sources.fromObservations(base.data.transactions,packet,{window,accountLinks,cardLinks,protectedRecords:base.manual.transactions,isProtected:protectedRow});
+ const candidate=clone({...base,data:{...base.data,transactions:[]}});candidate.data.transactions=result.rows;if(result.passed&&!result.mappingOnly)candidate.data.mcpObservationReview={schema:'mcp-observation-review-v1',profileId:packet.profileId,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false};
  return {schema:'controlled-update-preview-v2',mode:'mcp-observations',mappingOnly:result.mappingOnly===true,mappingReport:result.mappingReport,passed:result.passed,activeUnchanged:true,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false,
  operations:[{source:'plugin',mode:'observations',period:window,removed:0,included:result.changes.added}],
  summary:{removed:0,included:result.passed?result.changes.added:0,preserved:base.data.transactions.length+base.manual.transactions.length,conflicting:result.conflicts.length},

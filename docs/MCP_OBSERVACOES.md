@@ -34,7 +34,7 @@ Aceita JSON-RPC `result`, `structuredContent` ou JSON em `content` textual; se a
 | Evidência MCP | Proposta Controle Financeiro | Regra / limite |
 |---|---|---|
 | perfil + tipo + ID + occurrenceMonth + splitId opcional | `minhasFinancas` e chave composta | Strings opacas; mês explícito YYYY-MM. Não converter IDs numéricos nem derivar mês de pagamento/data. |
-| `data.transaction.dueDate` | `dueDate` | Somente calendário YYYY-MM-DD válido; sem fallback de date/referenceDate. Legados/timestamps ficam em conflito, não são aproximados. |
+| `data.transaction.dueDate` | `dueDate` | Calendário YYYY-MM-DD ou legado estrito YYYY-MM-DD HH:mm[:ss] validado, sem conversão de fuso; sem fallback de date/referenceDate. Outros timestamps ficam em conflito. |
 | `effectiveDate` | `paymentDate` | Calendário válido quando disponível; null explícito limpa a data proposta, ausência/formato desconhecido conserva a anterior com evidência desconhecida. Nunca determina situação. |
 | `createdAt` | `postedDate` | Cadastro/lançamento; calendário reconhecido, timestamps preservados sem truncamento. Não presumir UTC/fuso. |
 | `referenceDate` / `date` | Original privado | Referência da consulta, não vencimento nem competência da ocorrência. |
@@ -167,3 +167,13 @@ A evidência adicional fornecida pelo usuário corrigiu dois detalhes da descri�
 ### Conferir o JSON existente, sem nova consulta
 
 Na aplicação **local desta branch**, abra `Importar` → `Comparar observações do Minhas Finanças (arquivo local)`, selecione o JSON privado já salvo e clique em `Gerar prévia sem aplicar`. Use uma origem local isolada sem conectar ao OneDrive; não use importação normal/restauração de base. O arquivo não precisa ser editado nem enviado ao GitHub. Espere `DETAIL_IDENTITY_CONFIRMED`, vencimento aceito com `LEGACY_LOCAL_SECOND` e modo somente mapeamento, sem propostas. Valores e vínculos não comprovados permanecem bloqueados. Exportar candidata continua proibido nesse modo; o relatório de mapeamento pode ser conferido localmente. Esta verificação não requer iniciar a PoC ou repetir OAuth, PIN ou MCP.
+
+## Preparação consolidada — 06/11/2026
+
+O usuário validou a captura real detailsOnly no aplicativo após 731c11b: identidade confirmada, segundos reconhecidos, vínculos/valor individual bloqueados e base intacta. Essa pendência de reteste foi encerrada; não repetir a consulta. A revisão atual usa somente estruturas sintéticas.
+
+Interface agora distingue mapeamento de proposta/carga Excel, mostra LEGACY_LOCAL_SECOND, ausência de solicitação de refresh conforme evidência, campos aceitos/desconhecidos/bloqueados e mês original. Janela/totais financeiros não aparecem como cobertura de detailsOnly. Base local vazia não significa base publicada vazia. Exportação de candidata fica desabilitada nesse modo.
+
+Vínculos explícitos de contas e cartões estão disponíveis somente na revisão, por IDs, sem criar entidades ou associar nomes. Contradições impedem confirmação; IDs/vínculos estabelecidos são preservados. monetaryProjection real continua bloqueada para propostas quando faltar prova individual; agregados não suprem essa prova.
+
+PoC privada 2026.11.06.1 preparada e testada localmente, não disponibilizada/instalada: uma busca consentida de 5/10 ocorrências com false obrigatório no catálogo e HTTP, seguida de um detalhe escolhido e exportação com consentimentos separados; sem paginação ou retries automáticos. Aprovação de distribuição/consulta futura continua necessária. De/para de escopos monetários, pergunta ao fornecedor, proteções e benchmark em [REVISAO_INTEGRACAO_MCP.md](REVISAO_INTEGRACAO_MCP.md).
