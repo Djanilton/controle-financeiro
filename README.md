@@ -109,3 +109,5 @@ Na revisão candidata da branch `feat/atualizacao-candidata`, capturas MCP somen
 ## Conciliação de faturas (branch candidata, somente revisão)
 
 Área independente para comparar arquivos locais de fatura com uma fonte Minhas Finanças revisada, sem escrita nem aplicação financeira. Inclui demonstração fictícia, CSV/XLSX e subconjunto OFX validável; PDF e consultas MCP diretas continuam bloqueados. Contratos locais, limitações e instruções: [docs/CONCILIACAO_FATURAS.md](docs/CONCILIACAO_FATURAS.md).
+
+Histórico INSS em revisão independente: [INSS_HISTORICO.md](docs/INSS_HISTORICO.md). As marcações de faturas agora ficam em histórico privado separado no navegador, sem sincronização ou alterações nas transações.

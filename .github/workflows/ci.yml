@@ -35,3 +35,4 @@ jobs:
           node tests/browser-candidate-volume.cjs
           node tests/browser-mcp-observations.cjs
           node tests/browser-card-invoice.cjs
+          node tests/browser-invoice-tracking.cjs

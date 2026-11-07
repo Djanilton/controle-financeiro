@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="./styles.css?v=20261018-balanced">
   <link rel="stylesheet" href="./month-pivot.css?v=20261022-years">
   <link rel="stylesheet" href="./financial-charts.css?v=20261024-filtered">
-  <link rel="stylesheet" href="./card-invoice.css?v=20261107-invoices">
+  <link rel="stylesheet" href="./card-invoice.css?v=20261107-tracking">
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
@@ -26,12 +26,12 @@
       }else{
         await Promise.all([loadScript('./vendor/msal-browser.min.js'),loadScript('./vendor/xlsx.full.min.js')]);
         await loadScript('./app-core.js?v=20261022-daily-range');
-        await loadScript('./financial-model.js?v=20261021-no-card-marker');
+        await loadScript('./financial-model.js?v=20261107-inss-history');
         await loadScript('./transaction-entry.js?v=20261021-entry');
         await loadScript('./sac-engine.js?v=20261025-audit');
         await loadScript('./sac-adapter.js?v=20261018-balanced');
         await loadScript('./app.js?v=20261021-entry');
-        await loadScript('./app-enhancements.js?v=20261022-daily-range');
+        await loadScript('./app-enhancements.js?v=20261107-inss-history');
         await loadScript('./construction-finance.js?v=20261018-balanced');
         await loadScript('./integration-ui.js?v=20261025-audit');
         await loadScript('./finance-bridge.js?v=20261019-fgts-balance');
@@ -39,13 +39,14 @@
         await loadScript('./construction-drafts.js?v=20261025-sessions');
         await loadScript('./construction-host.js?v=20261025-sessions');
         await loadScript('./payroll-core.js?v=20261018-balanced');
-        await loadScript('./statement-core.js?v=20261018-imports');
+        await loadScript('./inss-history.js?v=20261107-history');
+        await loadScript('./statement-core.js?v=20261107-history');
         await loadScript('./report-center.js?v=20261024-all-import-auth');
         await loadScript('./base-reconciliation.js');
         await loadScript('./app-state.js?v=20261018-balanced');
         await loadScript('./patrimony-model.js?v=20261021-cash-first');
         await loadScript('./patrimony-ui.js?v=20261021-indexed');
-        await loadScript('./app-refinement.js?v=20261025-sessions');
+        await loadScript('./app-refinement.js?v=20261107-inss-history');
         await loadScript('./reserve-details.js?v=20261019-contractor');
         await loadScript('./settings-workspace.js?v=20261018-settings');
         await loadScript('./transfer-repair.js?v=20261018-transfers');
@@ -61,7 +62,11 @@
         await loadScript('./financial-charts.js?v=20261024-filtered');
         await loadScript('./month-inputs.js?v=20261024-focus');
         await loadScript('./card-invoice-core.js?v=20261107-invoices');
-        await loadScript('./card-invoice-ui.js?v=20261107-invoices');
+        await loadScript('./card-invoice-ui.js?v=20261107-tracking');
+        await loadScript('./invoice-review-history.js?v=20261107-tracking');
+        await loadScript('./invoice-review-store.js?v=20261107-tracking');
+        await loadScript('./invoice-review-ui.js?v=20261107-tracking');
+        await loadScript('./inss-history-ui.js?v=20261107-history');
         await loadScript('./interaction-state.js?v=20261024-focus');
       }
       }catch(error){const view=document.getElementById('view');if(view)view.textContent='Não foi possível carregar o aplicativo. Seus dados locais não foram apagados. Recarregue a página. Detalhe: '+error.message;console.error(error)}

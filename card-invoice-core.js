@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const SCHEMA='card-invoice-source-v1',KINDS=['purchase','refund','credit','fee','interest','iof','adjustment','payment','unknown'];
-const CONTRACTS=Object.freeze({get_credit_card_transactions:{limit:200,requestUpdateOpenFinance:false,bankRefreshGuaranteed:false},get_installment_series:{limit:200,bankAccess:false}});
+const CONTRACTS=Object.freeze({get_credit_card_transactions:{limit:200,requestUpdateOpenFinanceSupported:false,bankRefreshGuaranteed:false},get_installment_series:{limit:200,bankAccess:false}});
 const own=(x,k)=>Object.prototype.hasOwnProperty.call(x||{},k),copy=x=>JSON.parse(JSON.stringify(x));
 const text=x=>typeof x==='string'&&x.trim()?x.trim():null;
 function noSecrets(value,depth=0){if(depth>60)throw Error('SOURCE_DEPTH_INVALID');if(!value||typeof value!=='object')return;for(const [k,v] of Object.entries(value)){if(/^(?:authorization|access_?token|refresh_?token|client_?secret|password|pin|recovery|recoveryUrl)$/i.test(k))throw Error('SECRET_FIELD_REJECTED');noSecrets(v,depth+1)}}

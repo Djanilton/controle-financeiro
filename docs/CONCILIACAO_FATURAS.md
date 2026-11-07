@@ -2,7 +2,7 @@
 
 ## Escopo implementado
 
-Área independente **Conciliação de faturas**, na branch do PR #8. Arquivos lidos no navegador por ação explícita; nenhuma consulta MCP, chamada Graph, persistência financeira ou aplicação. Descartar revisão libera as referências da tela, sem apagar arquivos ou bases. Exportação JSON privada somente após consentimento próprio; contém dados financeiros e não deve ser enviada ao GitHub. A conciliação não remove o bloqueio da atualização candidata e não oferece operações de correção no Minhas Finanças.
+Área independente **Conciliação de faturas**, na branch do PR #8. Arquivos lidos no navegador por ação explícita; nenhuma consulta MCP, chamada Graph, persistência na base financeira ativa ou aplicação. Revisões e marcações são guardadas no histórico privado separado do navegador. Descartar revisão limpa a tela, sem apagar arquivos, bases ou revisões arquivadas. Exportação JSON privada somente após consentimento próprio; contém dados financeiros e não deve ser enviada ao GitHub. A conciliação não remove o bloqueio da atualização candidata e não oferece operações de correção no Minhas Finanças.
 
 Selecionar cartão (identificador local de revisão; sugestões dos cartões já carregados), mês **de vencimento** e moeda. O vínculo entre o cartão remoto e esse identificador precisa ser revisado; nomes iguais não constituem vínculo. Cada comparação cobre um cartão/mês. Arquivos de outros cartões/meses são recusados. É possível revisar outras faturas separadamente; ainda não há consolidação automática de várias faturas.
 
@@ -92,3 +92,23 @@ Testes: `node --test tests/card-invoice.test.cjs`; `node tests/browser-card-invo
 7. Séries expõem ID de ocorrência, ID da série, divisão, parcela/total e exclusão em quais caminhos? Como representar parcela ausente sem inventar cronograma?
 
 **Validação privada pendente:** formatos/layouts reais das instituições, conversões explicitamente autorizadas, mapeamento oficial de payloads, sinais e pagamentos antecipados, totais contra fatura real e séries. Não foi lido nenhum arquivo financeiro real nesta implementação. Recurso em revisão, não publicado no aplicativo de produção.
+
+## Acompanhamento e novas revisões — 07/11/2026
+
+As revisões agora são persistidas no **IndexedDB privado deste navegador**, banco `controle-financeiro-invoice-review-v1`, separado da base ativa e fora do Graph/OneDrive. A leitura local é consentida; o aviso informa o registro da revisão. Cada revisão guarda a fonte bancária revisada, fonte MF recebida, relatório e data. Marcações são eventos adicionais, sem sobrescrever a revisão anterior. “Descartar revisão desta tela” não apaga o histórico. Não há exclusão automática. Erros de quota/armazenamento são mostrados; não se afirma persistência quando o salvamento falha. O armazenamento local não é backup em nuvem ou criptografia própria: proteger o perfil do navegador e usar a exportação privada autorizada quando necessário.
+
+Checkbox em cada linha problemática permite marcar/desmarcar. Estados: Pendente, Marcada como corrigida pelo usuário, Correção confirmada após nova conciliação, Permanece divergente e Necessita revisão. Evento registra data; reabrir revisão/atualizar página recupera marcações. Contadores separam esses estados. Uma linha já conferente na primeira revisão **não** é apresentada como correção confirmada.
+
+Identidade de acompanhamento usa cartão, mês de fatura, perfil/cartão remoto disponíveis e os IDs efetivamente recebidos de cada lado, incluindo tipo/mês/divisão/parcela quando presentes. Não usa descrição/valor como identidade de marcação. Identificadores repetidos ou ambíguos não transferem marcações; podem ter uma anotação apenas naquela revisão. Mudança de IDs/parcela ou ausência de ocorrência exige revisão. Nenhum vínculo automático com transação financeira é criado.
+
+Ordenação estável: somente banco (Itaú quando essa for a fonte), somente Minhas Finanças, demais divergências, prováveis correspondências, conferentes. A ordem visual não altera a identificação original da linha.
+
+**Comparar novamente por arquivo** exige novo consentimento e nova fonte do mesmo cartão/mês; conserva a fonte bancária e acrescenta outra revisão. Uma ocorrência antes marcada só é confirmada quando reencontrada inequivocamente nos dois lados, com correspondência forte, campos válidos e controles válidos de ambas as fontes. Divergência reencontrada permanece divergente. Consulta/fonte parcial, desaparecimento ou identidade ambígua não comprovam correção ou exclusão. Ausências ficam registradas para revisão, sem eliminar a revisão anterior. O relatório privado exportado inclui o acompanhamento atual, somente com o consentimento de exportação já existente.
+
+### Consulta MCP e autenticação futura
+
+Botão **Consultar novamente no Minhas Finanças** permanece desabilitado e não possui transporte de consulta. Inspeção atual do contrato de `get_credit_card_transactions`: perfil/cartão/mês e paginação com limite 200, mas **sem anúncio de requestUpdateOpenFinance** nem garantia suficiente de ausência de atualização bancária. Não é correto omitir esse controle ou inferir suporte por existir em search/details. Nenhuma chamada foi feita.
+
+Para habilitar futuramente: confirmação oficial da política sem refresh e schema do transporte efetivo; OAuth próprio com PKCE S256/state/CSRF, sem credenciais do ChatGPT; preferir sessão protegida em backend intermediário ou a PoC isolada já autorizada, conforme CORS/redirects, sem segredos no aplicativo público; consentimento por consulta com cartão/perfil/mês fixos e orçamento explícito de páginas; sem retentativa/reconexão automática. Valores e cobertura precisam de contrato verificável. O backend, se necessário, deverá manter tokens fora do navegador/repositório, sessão segura e escopo de leitura, sem endpoints de escrita. Não foi implantado servidor ou nova autenticação nesta etapa. Importação manual permanece alternativa funcional.
+
+Pergunta adicional pronta ao fornecedor: **get_credit_card_transactions pode garantir contratualmente que uma chamada não solicita atualização Open Finance, mesmo sem cache, e expor essa capacidade no tools/list do transporte OAuth próprio? Quais evidências de filtros, paginação e cobertura acompanham essa resposta?** Não enviada automaticamente.
