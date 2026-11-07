@@ -79,3 +79,8 @@ Campos adicionados à apresentação/prévia: **Remuneração Apurada CNIS**, **
 `InssHistory.previewTable` produz cópia de revisão com antes/depois e `applyAllowed:false`. A tela mostra as propostas na própria tabela, identificadas como não aplicadas; “Descartar somente a prévia” recupera a apresentação ativa. Alteração concorrente da base invalida a apresentação da prévia. Aplicação segue indisponível: exige migração validada, backup, ETag e autorização específica. Não existe ação que aplique essa prévia por clique nesta versão.
 
 “Conferir PDFs INSS no OneDrive” usa a pasta de investimentos configurada privadamente, somente sob demanda. Lista a raiz, verifica identidade/ETag antes e depois da leitura e reaproveita fontes inalteradas **nesta sessão**. Não exige selecionar repetidamente os mesmos três PDFs. Configuração, sessão Microsoft e permissões reais de leitura no Windows ainda precisam de validação. Cache persistente de fontes INSS entre sessões não foi criado como segunda série financeira; reabrir sem uma prévia disponível pode requerer nova leitura autorizada.
+
+
+### Organização visual da tabela existente
+
+A visualização principal agrupa remunerações, contribuições e saldo/diferença, seguida de fonte/situação. O controle “Mostrar campos legados e detalhes” revela os campos originais, inclusive Remuneração INSS, na mesma tabela. Nenhuma coluna armazenada é removida ou renomeada. “Contribuição comprovada” exige `_recollectionProven=true` e valor numérico em “Recolhimento comprovado”; os demais valores legados não são promovidos a prova documental. Filtros e prévia sem aplicação permanecem.

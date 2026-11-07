@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="./styles.css?v=20261018-balanced">
   <link rel="stylesheet" href="./month-pivot.css?v=20261022-years">
   <link rel="stylesheet" href="./financial-charts.css?v=20261024-filtered">
-  <link rel="stylesheet" href="./card-invoice.css?v=20261107-tracking">
+  <link rel="stylesheet" href="./card-invoice.css?v=20261107-ux-review">
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
@@ -46,7 +46,7 @@
         await loadScript('./app-state.js?v=20261018-balanced');
         await loadScript('./patrimony-model.js?v=20261021-cash-first');
         await loadScript('./patrimony-ui.js?v=20261021-indexed');
-        await loadScript('./app-refinement.js?v=20261107-consolidated');
+        await loadScript('./app-refinement.js?v=20261107-ux-review');
         await loadScript('./reserve-details.js?v=20261019-contractor');
         await loadScript('./settings-workspace.js?v=20261107-consolidated');
         await loadScript('./transfer-repair.js?v=20261018-transfers');
@@ -64,16 +64,16 @@
         await loadScript('./card-invoice-core.js?v=20261107-invoices');
         await loadScript('./card-invoice-itau.js?v=20261107-itau');
         await loadScript('./card-invoice-extras.js?v=20261107-itau');
-        await loadScript('./card-invoice-ui.js?v=20261107-consolidated');
+        await loadScript('./card-invoice-ui.js?v=20261107-ux-review');
         await loadScript('./invoice-review-history.js?v=20261107-consolidated');
         await loadScript('./invoice-review-store.js?v=20261107-tracking');
         await loadScript('./invoice-review-ui.js?v=20261107-consolidated');
-        await loadScript('./inss-history-ui.js?v=20261107-integrated');
+        await loadScript('./inss-history-ui.js?v=20261107-ux-review');
         await loadScript('./private-source-core.js?v=20261107-private');
         await loadScript('./private-cutover-core.js?v=20261107-private');
         await loadScript('./private-history-sync.js?v=20261107-private');
-        await loadScript('./private-source-ui.js?v=20261107-private');
-        await loadScript('./card-invoice-extras-ui.js?v=20261107-itau');
+        await loadScript('./private-source-ui.js?v=20261107-ux-review');
+        await loadScript('./card-invoice-extras-ui.js?v=20261107-ux-review');
         await loadScript('./interaction-state.js?v=20261024-focus');
       }
       }catch(error){const view=document.getElementById('view');if(view)view.textContent='Não foi possível carregar o aplicativo. Seus dados locais não foram apagados. Recarregue a página. Detalhe: '+error.message;console.error(error)}

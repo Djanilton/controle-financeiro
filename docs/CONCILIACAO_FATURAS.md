@@ -136,3 +136,8 @@ IDs `document-row` identificam apenas a linha da cópia por SHA-256/posição or
 Exportação XLSX privada, com consentimento separado, gera quatro abas: **Conciliação**, **Resumo**, **Banco original**, **Minhas Finanças original**. Mantém valores originais e minor, moeda/escala, motivos e acompanhamento/data da marcação; unidades monetárias só são apresentadas após validação de moeda/escala. A aba Conciliação mantém a ordem de prioridade. Fórmulas não são derivadas de descrições ou documentos. Não importa o XLSX de volta como alteração financeira. O JSON privado continua disponível.
 
 Sincronização do histórico e corte de JSONs: [MIGRACAO_DADOS_PRIVADOS.md](MIGRACAO_DADOS_PRIVADOS.md). Situação de todos os requisitos, incluindo pendências reais: [MATRIZ_CONSOLIDACAO.md](MATRIZ_CONSOLIDACAO.md).
+
+
+### Navegação e filtros da revisão
+
+Faturas cartão está entre as ações principais das Importações e abre a mesma área de Conciliação, sem leitura automática do OneDrive. Selecione as fontes e compare mediante consentimento. Os filtros cartão, mês, situação e ordenação são reativos e limitados à revisão aberta; outra revisão exige reabertura explícita pelo histórico. Motivos resumidos podem ser expandidos por clique ou teclado. Filtros e ordenação preservam o índice original usado pelas marcações, não criam revisão nem alteram transações. A pesquisa textual e o botão Filtrar relatório foram retirados.
