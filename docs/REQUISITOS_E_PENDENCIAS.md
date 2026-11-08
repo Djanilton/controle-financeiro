@@ -780,3 +780,14 @@ Conciliação permanece abaixo de Despesas. Filtros de cartão, mês da fatura, 
 **Testes executados:** 415 testes Node em 55 arquivos; Chromium consolidado (tabela única, modo legado, filtros reativos, teclado, marcação estável, exportação XLSX, OneDrive simulado e assinatura ativa intacta), faturas (desktop/mobile, consentimento, arquivos sintéticos, XSS e teclado) e acompanhamento (persistência/reabertura). Sem rede externa nem escrita financeira. Capturas visuais sintéticas de desktop e celular. `git diff --check` limpo.
 
 **Limites:** validação local Linux/Chromium; Windows/Edge desta rodada não verificado. Sem novo CI remoto ou publicação por determinação do usuário. Alterações apenas locais na feat/atualizacao-candidata; PR #8 permanece rascunho e GitHub ainda não contém este acabamento. Sem alteração dos motores financeiros, aplicação de candidata, consulta MCP, sincronização, merge ou deploy.
+
+
+### Faturas cartão — estilo uniforme e entrada pelo OneDrive (07/11/2026)
+
+**Implementado e validado sinteticamente:** o botão Faturas cartão compartilha a regra CSS dos botões Contracheques/Alocação (incluindo hover, foco e desabilitado), sem receber `data-report-group` e sem integrar Importar todos. Seu clique abre Conciliação e inicia apenas listagem dos metadados da pasta privada configurada, via `chooseInvoiceOneDrive` e Graph existentes. Nenhum caminho pessoal novo foi codificado. Seleção local recolhida como alternativa secundária; demais ajustes de INSS, filtros, motivos e histórico preservados.
+
+Antes de `readPrivateItem`, exige arquivo selecionado, cartão, mês válido e confirmação explícita. Alterar arquivo/cartão/mês desmarca a confirmação. Cliques concorrentes não duplicam leitura. ID/ETag antes/depois permanecem; carregar só disponibiliza o arquivo para revisão, não compara nem aplica transações. Pasta ausente, Microsoft desconectada/expirada e permissão insuficiente oferecem orientação/configuração, sem reconexão/importação automáticas.
+
+**Testes locais:** 415 testes Node em 55 arquivos e todos os onze roteiros Chromium do CI aprovados, incluindo regressão de 30 mil ocorrências. Teste consolidado compara estilos computados nos quatro estados e verifica listagem sem conteúdo, bloqueio de seleção/escopo/consentimento, invalidação da confirmação, leitura única, falha de ETag, conexão/pasta/permissão, alternativa local recolhida, exportação e assinatura ativa intacta. Somente dados sintéticos; nenhuma consulta real ao OneDrive/MCP. `git diff --check` limpo.
+
+**Limites:** a interface anterior foi validada no Windows pelo usuário. Esta correção foi validada em Linux/Chromium com Graph simulado; conexão e pasta reais no Windows ainda não retestadas. Publicação autorizada exclusivamente na feat/atualizacao-candidata/PR #8 rascunho; resultado do CI remoto será informado na entrega. Sem merge, deploy, sincronização, migração ou movimentação de arquivos reais.

@@ -141,3 +141,10 @@ Sincronização do histórico e corte de JSONs: [MIGRACAO_DADOS_PRIVADOS.md](MIG
 ### Navegação e filtros da revisão
 
 Faturas cartão está entre as ações principais das Importações e abre a mesma área de Conciliação, sem leitura automática do OneDrive. Selecione as fontes e compare mediante consentimento. Os filtros cartão, mês, situação e ordenação são reativos e limitados à revisão aberta; outra revisão exige reabertura explícita pelo histórico. Motivos resumidos podem ser expandidos por clique ou teclado. Filtros e ordenação preservam o índice original usado pelas marcações, não criam revisão nem alteram transações. A pesquisa textual e o botão Filtrar relatório foram retirados.
+
+
+### Atalho OneDrive e confirmação antes do conteúdo
+
+Em Configurações → Importações, **Faturas cartão** usa a mesma regra visual dos botões Contracheques e Alocação de investimentos. Não integra o grupo “Importar todos os relatórios”. O clique abre Conciliação e solicita a listagem dos metadados da pasta privada configurada em `invoiceReportsFolder`, reaproveitando `chooseInvoiceOneDrive`/Microsoft Graph. Não grava um caminho pessoal no código nem busca pasta alternativa silenciosamente. A navegação normal pelo menu não inicia essa listagem.
+
+Escolha um arquivo, informe cartão e mês de vencimento e marque a confirmação antes de carregar. Alterações do arquivo, cartão ou mês invalidam a confirmação; conteúdo só é solicitado após nova confirmação. `readPrivateItem` mantém identidade e ETag antes/depois, sem escrita. Cliques concorrentes de carga são bloqueados. Sessão desconectada/expirada e pasta ausente/permissão insuficiente mostram orientação e acesso às configurações, sem login, reconexão ou importação automáticos. Selecione manualmente “Buscar fatura no OneDrive” depois de conectar/configurar. O seletor local permanece em “Alternativa: selecionar fatura neste dispositivo”. Carregar não compara nem aplica dados; consentimentos da comparação e da exportação continuam separados.
