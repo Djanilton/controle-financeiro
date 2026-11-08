@@ -42,3 +42,11 @@ jobs:
           node tests/browser-payroll-auth.cjs
           node tests/browser-sidebar.cjs
           node tests/browser-sources-readonly.cjs
+          node tests/browser-construction-fields.cjs
+          node tests/browser-construction-workflows.cjs
+          node tests/browser-construction-migration.cjs
+          node tests/browser-transaction-workspace.cjs
+          node tests/browser-daily-range.cjs
+          node tests/browser-financial-charts.cjs
+          node tests/browser-month-pivot.cjs
+          node tests/browser-construction-navigation.cjs
