@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="./styles.css?v=20261018-balanced">
   <link rel="stylesheet" href="./month-pivot.css?v=20261022-years">
   <link rel="stylesheet" href="./financial-charts.css?v=20261024-filtered">
-  <link rel="stylesheet" href="./card-invoice.css?v=20261107-ux-review">
+  <link rel="stylesheet" href="./card-invoice.css?v=20261107-source-only">
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
@@ -24,6 +24,9 @@
         await loadScript('./vendor/msal-redirect-bridge.min.js');
         await window.msalRedirectBridge.broadcastResponseToMainFrame();
       }else{
+        let lastInvoiceView=false;try{lastInvoiceView=JSON.parse(localStorage.getItem('controle-financeiro-filtros-v1')||'{}').tab==='cardInvoices'}catch{}
+        const entryParams=new URL(location.href).searchParams;
+        if((!entryParams.has('area')&&!entryParams.has('mode')&&lastInvoiceView)||entryParams.get('mode')==='invoice-readonly'||entryParams.get('area')==='cardInvoices'){await loadScript('./sources-review-loader.js?v=20261107-isolated');return}
         await Promise.all([loadScript('./vendor/msal-browser.min.js'),loadScript('./vendor/xlsx.full.min.js')]);
         await loadScript('./app-core.js?v=20261022-daily-range');
         await loadScript('./financial-model.js?v=20261107-inss-history');
@@ -72,11 +75,13 @@
         await loadScript('./private-source-core.js?v=20261107-private');
         await loadScript('./private-cutover-core.js?v=20261107-private');
         await loadScript('./private-history-sync.js?v=20261107-private');
+        await loadScript('./private-source-read.js?v=20261107-shared');
         await loadScript('./private-source-ui.js?v=20261107-invoice-onedrive');
         await loadScript('./card-invoice-extras-ui.js?v=20261107-ux-review');
         await loadScript('./private-graph-transport.js?v=20261107-simulation-only');
         await loadScript('./invoice-batch-core.js?v=20261107-batch');
         await loadScript('./invoice-batch-ui.js?v=20261107-batch');
+        await loadScript('./invoice-review-entry.js?v=20261107-isolated');
         await loadScript('./interaction-state.js?v=20261024-focus');
       }
       }catch(error){const view=document.getElementById('view');if(view)view.textContent='Não foi possível carregar o aplicativo. Seus dados locais não foram apagados. Recarregue a página. Detalhe: '+error.message;console.error(error)}

@@ -41,3 +41,4 @@ jobs:
           node tests/browser-month-inputs.cjs
           node tests/browser-payroll-auth.cjs
           node tests/browser-sidebar.cjs
+          node tests/browser-sources-readonly.cjs

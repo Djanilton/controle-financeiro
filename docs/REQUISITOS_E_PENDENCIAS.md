@@ -813,3 +813,8 @@ Antes de `readPrivateItem`, exige arquivo selecionado, cartão, mês válido e c
 
 
 **Ajuste de portabilidade no CI:** a primeira execução remota desta rodada (#37) aprovou Node e o lote, mas o roteiro de meses assumia a ordem de foco do segmento nativo de ano do Chromium 154 local; no Chromium 141 do CI a digitação não produziu o ano esperado. O teste passou a verificar edição nativa por seta, Escape, rascunho de ano inválido, foco, Enter, edição de dois campos e persistência sem depender dessa ordem. Não foi alterada a validação do aplicativo nem aceito um ano inválido. Nova execução completa do CI será acompanhada na entrega.
+
+
+### Fechamento do PR #8 — isolamento e revisão integrada
+
+**Em andamento:** alterações locais de isolamento foram recuperadas após indisponibilidade do executor, sem sobrescrever o trabalho. Entrada de conferência separada, callback OAuth dedicado, sessão de fontes em memória/Files.Read, fachada Graph GET por capacidades e relatório antes das opções avançadas implementados; validação sintética anterior registrou 448 testes Node e 16 roteiros Chromium. A rodada atual repetirá os testes, integração da main e inspeção efetiva das capturas desktop/mobile antes da publicação. Sem autenticação real, consulta MCP, escrita financeira, migração ou deploy. A migração definitiva fica em PR dependente separado; rotas antigas continuarão funcionais no PR #8.

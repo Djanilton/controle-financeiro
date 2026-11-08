@@ -1,9 +1,6 @@
 /* Demand-only OneDrive readers. Configuration changes never move or activate a base. */
 'use strict';
 function privateActiveLocation(){return appRemote?.item?((appRemote.item.parentReference?.path||'Localização remota não confirmada')+'/'+(appRemote.item.name||APP_STATE_FILE)):hasAppData()?'Cópia local integrada — sem troca de destino':'Nenhuma base carregada; zeros não comprovam saldo real'}
-function configuredSourcePath(key){if(!settings[key])throw Error('Configure primeiro a pasta privada em Configurações → Importações.');return PrivateSourceCore.path(settings[key])}
-async function privateFolderItems(key){const p=configuredSourcePath(key),item=await(await graph('/me/drive/root:/'+graphPath(p),{silent:true})).json();if(!item.folder||!item.id)throw Error('Pasta privada não validada.');const rows=await graphPages('/me/drive/items/'+encodeURIComponent(item.id)+'/children?$top=200&$select=id,name,eTag,lastModifiedDateTime,size,file,folder',{silent:true});return {folder:item,rows}}
-async function readPrivateItem(item){if(!item.id||!item.eTag||item.size>30000000)throw Error('Versão do arquivo não confirmada.');const url='/me/drive/items/'+encodeURIComponent(item.id),before=await(await graph(url+'?$select=id,eTag,file,size',{silent:true})).json();if(before.id!==item.id||!before.file||before.size>30000000||before.eTag!==item.eTag)throw Error('O arquivo mudou; selecione a versão atual.');const r=await graph(url+'/content',{silent:true}),buffer=await r.arrayBuffer(),after=await(await graph(url+'?$select=id,eTag',{silent:true})).json();if(after.id!==item.id||after.eTag!==before.eTag)throw Error('O arquivo mudou durante a leitura; nenhum resultado foi aplicado.');return buffer}
 async function chooseInvoiceOneDrive(){
  if(invoiceWorkspace.busy||invoiceWorkspace.driveListing)return;
  invoiceWorkspace.driveFiles=null;invoiceWorkspace.driveIssue='';
