@@ -12,3 +12,6 @@
 
 /* Candidate controls must shrink with the import card, including native file/date inputs. */
 #candidateUpdate{min-width:0;overflow-wrap:anywhere}#candidateUpdate fieldset{min-inline-size:0}#candidateUpdate input,#candidateUpdate select,#candidateUpdate button{max-width:100%;min-width:0}#candidateUpdate label{display:block}
+
+/* Keep long status messages inside narrow viewports, including their padding. */
+.toast{box-sizing:border-box;overflow-wrap:anywhere;white-space:normal;z-index:1000}
