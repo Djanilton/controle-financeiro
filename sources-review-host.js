@@ -8,7 +8,7 @@ const data=Object.freeze({transactions:Object.freeze([]),sourceTables:Object.fre
 const appStateSignature=()=>JSON.stringify({mode:'invoice-readonly',operationalBaseNotLoaded:true});
 const graphPath=p=>p.split('/').map(encodeURIComponent).join('/');
 function tableView(headers,rows,cell){return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${headers.map(h=>`<td>${cell?cell(r[h],h,r):esc(r[h]??'—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
-function toast(message){$('toast').textContent=message}
+function toast(message){const el=$('toast');el.textContent=message;el.setAttribute('role','status');el.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove('show'),5000)}
 function attach(){}
 function renderNav(){$('nav').innerHTML='<p class="fine">Conferência isolada de fontes</p>';$('accountBadge').textContent=sourceSession?.connected()?'Conectado ao OneDrive — somente leitura de fontes':'OneDrive desconectado — fontes somente leitura';$('menuButton').hidden=true;document.body.classList.add('source-review-mode')}
 function render(){renderNav();$('pageTitle').textContent='Conciliação de faturas';$('view').innerHTML=invoiceView();invoiceAttach()}
