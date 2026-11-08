@@ -49,3 +49,10 @@
 .source-review-mode #invoiceResult .invoice-description span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-width:230px}
 .source-review-mode #invoiceResult .invoice-tracking-state{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .source-review-mode #invoiceResult .invoice-reason details[open]{max-height:200px;overflow:auto}
+.source-review-mode #invoiceLinkAssistant dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;align-items:start}
+.source-review-mode #invoiceLinkAssistant dd{margin:0;overflow-wrap:anywhere}
+.source-review-mode #invoiceLinkAssistant>p{margin:10px 0;font-size:.9rem}
+.source-review-mode #invoiceWizardColumns label{display:block;margin:8px 0}
+.source-review-mode #invoiceWizardConfirm{margin:14px 0}
+.source-review-mode #invoiceLinkAssistant label{white-space:normal}
+@media(max-width:600px){.source-review-mode #invoiceLinkAssistant dl{grid-template-columns:1fr 1fr;font-size:.88rem}}

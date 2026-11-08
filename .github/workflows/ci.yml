@@ -50,3 +50,4 @@ jobs:
           node tests/browser-financial-charts.cjs
           node tests/browser-month-pivot.cjs
           node tests/browser-construction-navigation.cjs
+          node tests/browser-invoice-assistant.cjs

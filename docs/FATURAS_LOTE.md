@@ -69,3 +69,15 @@ Buffers são processados um a um. O índice das faturas contém somente metadado
 ## Escrita e migração
 
 `private-graph-transport.js` recebe uma função de request **injetada**, não usa fetch/token implicitamente, bloqueia escrita por padrão e não é instanciado pela aplicação. Testes habilitam escrita somente sobre mocks. Backup de histórico, If-Match, cópias condicionais, hash/releitura e migração com backups/prova externa de revogação estão preparados; não há botão/transporte de escrita real ativado. Autorizações específicas e verificação das garantias do Graph/ACLs/sessões antigas continuam obrigatórias.
+
+## Assistente de confirmação do cartão
+
+Reabra Conciliação no **mesmo endereço, porta e perfil de navegador** usados no teste anterior; não limpe o armazenamento. A identidade da fatura bloqueada pode ser recuperada dos bytes/identidade já preservados, sem baixá-la novamente. Instituição, mês e identificadores mascarados aparecem em **Confirmar cartão da fatura**. A evidência única é selecionada para revisão, nunca confirmada automaticamente.
+
+Se os três relatórios MF ainda não estiverem disponíveis com integridade verificável, use **Inspecionar relatórios MF pelo OneDrive** e autorize sua leitura. Essa ação acessa apenas os relatórios da pasta configurada; não recarrega a base principal nem busca faturas adicionais. O consentimento do lote também autoriza essa inspeção quando há faturas sem vínculo. Nenhuma consulta ocorre ao inicializar/recarregar.
+
+Confira o cartão MF. Um identificador completo coincidente pode vir pré-selecionado; nome/final não autorizam essa proposta. Se não houver coincidência integral, selecione explicitamente somente após conferência documental. Em **Colunas e bloqueios dos relatórios encontrados**, veja os cabeçalhos reais por arquivo e, quando necessário, escolha colunas existentes. Não é preciso editar JSON. Campos ausentes ou sem semântica comprovada não são preenchidos artificialmente.
+
+Quando a pré-validação permitir, marque a confirmação e acione **Confirmar vínculo e comparar arquivos salvos**. A ação verifica as fontes e gera a tabela somente com o cache; não precisa estar conectada se todas as evidências estiverem disponíveis. Não faz novos downloads, não escreve no OneDrive e não altera transações. Revisões anteriores e marcações são preservadas.
+
+Se faltar natureza (compra, estorno, pagamento etc.), mês da fatura, vencimento, identidade ou semântica monetária, o bloqueio é explicado. Total igual não comprova cobertura nem autoriza inferência. A comparação continua parcial e sem aplicação. Cache legado sem bytes/metadados suficientes poderá exigir uma leitura explícita da fonte; cache corrompido ou versões conflitantes não são substituídos silenciosamente. O nome do arquivo não é prova de identidade. Os detalhes técnicos antigos continuam em Opções avançadas para casos excepcionais.

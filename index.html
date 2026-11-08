@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="./styles.css?v=20261108-final-review">
   <link rel="stylesheet" href="./month-pivot.css?v=20261022-years">
   <link rel="stylesheet" href="./financial-charts.css?v=20261024-filtered">
-  <link rel="stylesheet" href="./card-invoice.css?v=20261107-source-only">
+  <link rel="stylesheet" href="./card-invoice.css?v=20261108-assistant">
   <title>Controle das Finanças</title>
   <script>
     const loadScript=src=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=reject;document.head.appendChild(script)});
@@ -26,7 +26,7 @@
       }else{
         let lastInvoiceView=false;try{lastInvoiceView=JSON.parse(localStorage.getItem('controle-financeiro-filtros-v1')||'{}').tab==='cardInvoices'}catch{}
         const entryParams=new URL(location.href).searchParams;
-        if((!entryParams.has('area')&&!entryParams.has('mode')&&lastInvoiceView)||entryParams.get('mode')==='invoice-readonly'||entryParams.get('area')==='cardInvoices'){await loadScript('./sources-review-loader.js?v=20261107-isolated');return}
+        if((!entryParams.has('area')&&!entryParams.has('mode')&&lastInvoiceView)||entryParams.get('mode')==='invoice-readonly'||entryParams.get('area')==='cardInvoices'){await loadScript('./sources-review-loader.js?v=20261108-assistant');return}
         await Promise.all([loadScript('./vendor/msal-browser.min.js'),loadScript('./vendor/xlsx.full.min.js')]);
         await loadScript('./app-core.js?v=20261022-daily-range');
         await loadScript('./financial-model.js?v=20261107-inss-history');
