@@ -1,0 +1,4 @@
+// Manual offline audit. Inputs and optional output are private, never fixtures or GitHub artifacts.
+'use strict';
+const fs=require('node:fs'),A=require('../construction-reference-audit');
+try{const [actualPath,referencePath,mappingPath,outputPath]=process.argv.slice(2);if(!actualPath||!referencePath||!mappingPath)throw Error('THREE_PRIVATE_JSON_INPUTS_REQUIRED');const read=p=>{if(fs.statSync(p).size>30000000)throw Error('INPUT_TOO_LARGE');return JSON.parse(fs.readFileSync(p,'utf8'))},report=A.compare(read(actualPath),read(referencePath),read(mappingPath));if(outputPath)fs.writeFileSync(outputPath,JSON.stringify(report,null,2),{flag:'wx',mode:0o600});console.log(JSON.stringify({schema:report.schema,passed:report.passed,counts:report.counts,privateReportSaved:!!outputPath,applyAllowed:false}));}catch(error){console.error(/^[A-Z_]+$/.test(error.message)?error.message:'PRIVATE_REFERENCE_AUDIT_FAILED');process.exitCode=1}

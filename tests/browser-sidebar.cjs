@@ -1,8 +1,8 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),os=require('node:os'),assert=require('node:assert/strict');
-const {chromium}=require(path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'));
+const {chromium,launchOptions}=require('./browser-runtime.cjs');
 (async()=>{
  const root=path.resolve(__dirname,'..'),server=http.createServer((req,res)=>{let file=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!file.startsWith(root+path.sep)&&file!==root)return res.writeHead(403).end();if(fs.existsSync(file)&&fs.statSync(file).isDirectory())file=path.join(file,'index.html');if(!fs.existsSync(file))return res.writeHead(404).end();res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');fs.createReadStream(file).pipe(res)});
- await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true,executablePath:path.join(process.env.PROGRAMFILES,'Google/Chrome/Application/chrome.exe')});
+ await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch(launchOptions());
  try{for(const [name,width,height] of [['desktop',1440,1000],['portrait',390,844],['landscape',915,412]]){
   const context=await browser.newContext({viewport:{width,height}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port);await page.waitForSelector('#nav .nav-button');const toggle=page.locator('#menuButton');await toggle.waitFor({state:'visible'});assert.equal(await toggle.count(),1);
   if(await toggle.getAttribute('aria-expanded')==='true')await toggle.click();assert.equal(await toggle.getAttribute('aria-expanded'),'false');

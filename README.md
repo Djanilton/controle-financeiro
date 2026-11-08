@@ -113,3 +113,10 @@ Na revisão candidata da branch `feat/atualizacao-candidata`, capturas MCP somen
 INSS integrado à tabela existente em **Investimentos → INSS — Histórico e conferência**: [INSS_HISTORICO.md](docs/INSS_HISTORICO.md). As marcações de faturas agora ficam em histórico privado separado no navegador, sem sincronização ou alterações nas transações.
 
 Especificação consolidada e situação de todas as frentes: [MATRIZ_CONSOLIDACAO.md](docs/MATRIZ_CONSOLIDACAO.md). Configuração dos diretórios é privada; não há corte automático para os novos JSONs ou sincronização do histórico de faturas.
+
+
+## Faturas em lote por ano (branch de revisão)
+
+Em Configurações → Importações, Faturas cartão inicia uma leitura em lote **após consentimento explícito**, sem escolher cada arquivo inequívoco. Descobre pastas anuais existentes, usa ID/ETag/hash/cache privado, compara fontes revisadas por cartão/mês e preserva todas as revisões e marcações. Não roda ao abrir o aplicativo, não integra Importar todos e não altera transações. Cartão desconhecido, layout não validado, versões conflitantes ou semântica financeira incompleta bloqueiam a comparação; exigem vínculo/revisão privada, não adivinhação pelo nome. Fontes MF continuam sem comprovação automática de cobertura integral. Configuração, formatos, exemplos fictícios e limites em [FATURAS_LOTE.md](docs/FATURAS_LOTE.md).
+
+Transporte Graph de histórico/migração foi preparado com requests injetados e escrita bloqueada por padrão, testado apenas com mocks, sem instância de escrita na aplicação. Rotas JSON reais permanecem inalteradas. O confronto privado da construção pode ser preparado por [compare-construction-reference.cjs](scripts/compare-construction-reference.cjs), offline, com mapeamento de competências/campos/unidades revisado; resumo em stdout não imprime valores e relatório privado só é salvo em um arquivo novo fornecido explicitamente. Testes sintéticos/Python não validam por si a planilha real.

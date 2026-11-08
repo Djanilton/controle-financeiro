@@ -55,3 +55,26 @@ Relatórios de despesas/receitas/transferências preparados pelo OneDrive vão p
 ## Sincronização opcional de conciliações
 
 `private-history-sync.js` prepara união append-only de revisões/eventos, com ETag esperado, backup do remoto e detecção de mesmo ID com conteúdos diferentes. Não exclui histórico, não sobrescreve conflito, não se mistura à base de transações e tem `applyAllowed:false`. O IndexedDB existente não foi substituído. Transporte Graph, backups externos e interface de aprovação de sincronização ainda não foram habilitados; nenhuma configuração inicia sincronização automática.
+
+
+## Complemento — transporte Graph injetado e recuperação (07/11/2026)
+
+`private-graph-transport.js` implementa leitura versionada, cópia condicional com If-None-Match e conflictBehavior=fail, hash/releitura e backups independentes antes do estágio. Não tem fetch, token ou request global; o chamador injeta o transporte. Escritas estão bloqueadas por padrão, sem instância na aplicação. A habilitação usada nos testes aponta exclusivamente para um Graph sintético. Falhas retêm diário e IDs/hashes dos backups parciais; não há remoção automática.
+
+Histórico: união append-only existente, backup verificado do remoto, If-Match, nova conferência de ETag e releitura do conteúdo final. Conflitos de mesmo ID, concorrência e falhas de backup bloqueiam a operação. Criação inicial é separada e não sobrescreve arquivo existente. IndexedDB não é substituído nem apagado; teste de upgrade conserva eventos v1.
+
+Migração: stageWithBackups prepara as duas cópias e conserva bytes/IDs/extras/anexos/links. activateVerified exige backups intactos e uma função externa que comprove a revogação de todos os gravadores inventariados, com referência de auditoria. O retorno sintético dessa função no teste não é prova de revogação em produção. O transporte não altera ACLs, não descobre todas as sessões antigas por si e **não troca as rotas reais**. Sem isso, uma única base gravável real não está comprovada; o corte permanece bloqueado.
+
+Faltam para execução real: inventário final de origens/destinos/versões e gravadores, prévia autorizada, verificação das precondições de criação/upload suportadas pelo Graph real, permissões e diretórios aprovados, backups reais verificados, revogação distribuída/rotas únicas, ensaio de recuperação e autorização específica. Nenhum contrato/aditivo/projeto/PDF/XLSM ou arquivo original deve ser movido.
+
+Contracheques mantêm ano corrente/anterior e recuperação histórica explícita. Investimentos descobrem todos os diretórios anuais existentes; base inicial é incluída somente na primeira carga sem histórico FGTS/NEOS ou em recuperação explícita. PDFs CNIS na raiz permanecem disponíveis. Pastas/páginas/arquivos agora têm limites e detecção de ciclos/IDs duplicados. Manifesto/ETag/hash, competência documental, complementos no pagamento e validações de saldos/cotas permanecem. Continuidade de todos os layouts reais, papéis de documentos acumulados e recálculo mínimo por dependência não foram presumidos nem declarados concluídos.
+
+## Confronto privado da construção
+
+`construction-reference-audit.js` e `scripts/compare-construction-reference.cjs` comparam duas séries mensais exportadas localmente, sem executar Excel ou Minha Obra. Exigem mapeamento explícito revisado de mês, campos, unidade e tolerância. Ausência, null, texto e mês duplicado não viram zero. Saída padrão contém apenas contadores; um quarto argumento grava relatório privado detalhado em arquivo novo (não sobrescreve).
+
+```text
+node scripts/compare-construction-reference.cjs modelo-privado.json referencia-privada.json mapeamento-privado.json resultado-privado-novo.json
+```
+
+Esses JSONs ficam fora do checkout. Para campos como juros de obra, amortização, liberação, saldo devedor, FGTS, recursos próprios, rendimentos e cronograma, confirmar a semântica de cada coluna antes do confronto. Correspondência numérica não substitui conferência documental/contratual. Motores locais e verificador Python de 413 meses permanecem a evidência sintética; confronto integral com a planilha privada não foi executado nesta rodada.
