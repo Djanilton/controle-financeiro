@@ -1,7 +1,7 @@
 name: Validar Pull Request
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/atualizacao-candidata]
 permissions:
   contents: read
 jobs:
@@ -51,3 +51,4 @@ jobs:
           node tests/browser-month-pivot.cjs
           node tests/browser-construction-navigation.cjs
           node tests/browser-invoice-assistant.cjs
+          node tests/browser-mcp-readonly-contract.cjs

@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const SCHEMA='card-invoice-source-v1',KINDS=['purchase','refund','credit','fee','interest','iof','adjustment','payment','unknown'];
-const CONTRACTS=Object.freeze({get_credit_card_transactions:{limit:200,requestUpdateOpenFinanceSupported:false,bankRefreshGuaranteed:false},get_installment_series:{limit:200,bankAccess:false}});
+const CONTRACTS=Object.freeze({get_credit_card_transactions:{limit:200,requestUpdateOpenFinanceSupported:false,bankRefreshGuaranteed:true},get_installment_series:{limit:200,defaultLimit:50,maxRecords:10000,requestUpdateOpenFinanceSupported:false,bankRefreshGuaranteed:true,bankAccess:false},get_credit_card_details:{requiredArguments:{requestUpdateOpenFinance:false},bankRefreshGuaranteed:true}});
 const own=(x,k)=>Object.prototype.hasOwnProperty.call(x||{},k),copy=x=>JSON.parse(JSON.stringify(x));
 const text=x=>typeof x==='string'&&x.trim()?x.trim():null;
 function noSecrets(value,depth=0){if(depth>60)throw Error('SOURCE_DEPTH_INVALID');if(!value||typeof value!=='object')return;for(const [k,v] of Object.entries(value)){if(/^(?:authorization|access_?token|refresh_?token|client_?secret|password|pin|recovery|recoveryUrl)$/i.test(k))throw Error('SECRET_FIELD_REJECTED');noSecrets(v,depth+1)}}
@@ -15,6 +15,7 @@ function minor(value,format='decimal-dot'){
  if(format==='decimal-comma'){if(!/^-?(?:\d+|\d{1,3}(?:\.\d{3})+)(?:,\d{1,2})?$/.test(s))return null;s=s.replace(/\./g,'').replace(',','.')}else if(format!=='decimal-dot')return null;
  if(!/^-?\d+(?:\.\d{1,2})?$/.test(s))return null;const [a,b='']=s.replace('-','').split('.'),n=Number(a)*100+Number(b.padEnd(2,'0'));return Number.isSafeInteger(n)?(s.startsWith('-')?-n:n):null;
 }
+function remoteOccurrenceKey(profile,row){const types={expense:'expenses',expenses:'expenses',despesa:'expenses',income:'incomes',incomes:'incomes',receita:'incomes',transfer:'transfers',transfers:'transfers',transferencia:'transfers'};if(typeof row.id!=='string'||!row.id.length||!types[row.type]||!month(row.occurrenceMonth))return null;return JSON.stringify([profile,types[row.type],row.id,row.occurrenceMonth,row.splitId??null])}
 function normalizedRow(raw,index,source){
  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('ROW_STRUCTURE_INVALID');
  const fields={};for(const k of ['purchaseDate','processingDate','dueDate'])fields[k]=state(raw,k,date);
@@ -23,7 +24,7 @@ function normalizedRow(raw,index,source){
  for(const k of ['installmentNumber','installmentsCount'])fields[k]=state(raw,k,v=>Number.isSafeInteger(v)&&v>0);
  const r={...copy(raw),sourceFields:copy(raw.sourceFields??raw),index,side:source,fields,amountMinor:Number.isSafeInteger(raw.amountMinor)?raw.amountMinor:null,kind:KINDS.includes(raw.kind)?raw.kind:'unknown'};
  for(const k of ['purchaseDate','processingDate','dueDate'])r[k]=date(raw[k]);r.invoiceMonth=month(raw.invoiceMonth);
- r.cardId=text(raw.cardId);r.description=text(raw.description);r.sharedId=text(raw.sharedId);r.id=text(raw.id);
+ r.cardId=text(raw.cardId);r.description=text(raw.description);r.sharedId=typeof raw.sharedId==='string'&&raw.sharedId.length?raw.sharedId:null;r.id=typeof raw.id==='string'&&raw.id.length?raw.id:null;
  r.installmentNumber=fields.installmentNumber==='CONFIRMED'?raw.installmentNumber:null;r.installmentsCount=fields.installmentsCount==='CONFIRMED'?raw.installmentsCount:null;
  r.issues=[];if(r.amountMinor===null)r.issues.push('AMOUNT_UNKNOWN');if(r.kind==='unknown')r.issues.push('KIND_UNKNOWN');
  if(r.amountMinor!==null&&(r.kind==='purchase'||['fee','interest','iof'].includes(r.kind))&&r.amountMinor<0||r.amountMinor!==null&&['refund','credit'].includes(r.kind)&&r.amountMinor>0)r.issues.push('SIGN_CONTRADICTORY');
@@ -40,7 +41,7 @@ function source(packet,side){
  const validMoney=/^[A-Z]{3}$/.test(packet.currency||'')&&packet.scale===2&&packet.amountSemantics==='signed-invoice-minor';
  if(!validMoney)issues.push('MONETARY_SEMANTICS_UNCONFIRMED');
  for(const r of rows){if(own(r,'currency')&&r.currency!==packet.currency)r.issues.push('ROW_CURRENCY_DIVERGENT');if(own(r,'scale')&&r.scale!==packet.scale)r.issues.push('ROW_SCALE_DIVERGENT');if(r.cardId!==packet.cardId)r.issues.push('CARD_SCOPE_UNCONFIRMED');if(r.invoiceMonth!==packet.invoiceMonth)r.issues.push(r.invoiceMonth?'INVOICE_MONTH_DIVERGENT':'INVOICE_MONTH_UNKNOWN')}
- const ids=new Map();for(const r of rows)if(r.id){if(!ids.has(r.id))ids.set(r.id,[]);ids.get(r.id).push(r)}for(const list of ids.values())if(list.length>1)for(const r of list)r.issues.push('DUPLICATE_ID');
+ const ids=new Map();for(const r of rows)if(r.id){const key=side==='minhas-financas'?remoteOccurrenceKey(packet.profileId,r)||r.id:r.id;if(!ids.has(key))ids.set(key,[]);ids.get(key).push(r)}for(const list of ids.values())if(list.length>1)for(const r of list)r.issues.push('DUPLICATE_ID');
  const allKnown=rows.every(r=>r.amountMinor!==null&&!r.issues.length),sum=rows.reduce((n,r)=>n+(r.amountMinor??0),0);
  const c=packet.control,controlled=validMoney&&allKnown&&Number.isSafeInteger(sum)&&c?.independent===true&&c.count===rows.length&&Number.isSafeInteger(c.totalMinor)&&c.totalMinor===sum;
  if(!controlled)issues.push('SOURCE_COVERAGE_UNCONFIRMED');
@@ -132,7 +133,7 @@ function fromCapture(capture,mapping){
   let payload=p.response?.structuredContent;const textsPresent=p.response?.content?.filter(c=>c.type==='text')||[];if(payload&&textsPresent.length){if(textsPresent.length!==1)throw Error('CAPTURE_ENVELOPES_CONTRADICTORY');let textual;try{textual=JSON.parse(textsPresent[0].text)}catch{throw Error('CAPTURE_RESPONSE_INVALID')}if(stable(payload)!==stable(textual))throw Error('CAPTURE_ENVELOPES_CONTRADICTORY')}if(!payload){const texts=p.response?.content?.filter(c=>c.type==='text')||[];if(texts.length!==1)throw Error('CAPTURE_RESPONSE_INVALID');try{payload=JSON.parse(texts[0].text)}catch{throw Error('CAPTURE_RESPONSE_INVALID')}}
   if(p.response?.isError||p.response?.error||payload?.success===false||payload?.error)throw Error('CAPTURE_TOOL_ERROR');
   const items=read(payload,mapping.itemsPath);if(!Array.isArray(items)||items.length>req.arguments.limit)throw Error('CAPTURE_ITEMS_INVALID');
-  for(const item of items){const r={sourceFields:copy(item),cardId:capture.cardId,invoiceMonth:capture.invoiceMonth};for(const [field,path] of Object.entries(mapping.fields||{})){if(field==='dueDate'&&(typeof path!=='string'||path.split('.').at(-1)!=='dueDate'))throw Error('DUE_DATE_MAPPING_UNCONFIRMED');if(['__proto__','prototype','constructor','sourceFields','cardId'].includes(field))throw Error('MAPPING_PATH_INVALID');const v=read(item,path);if(v!==undefined)r[field]=copy(v)}if(!text(r.id)||seen.has(r.id))throw Error('CAPTURE_ID_INVALID');seen.add(r.id);rows.push(r)}
+  for(const item of items){const r={sourceFields:copy(item),cardId:capture.cardId,invoiceMonth:capture.invoiceMonth};for(const [field,path] of Object.entries(mapping.fields||{})){if(field==='dueDate'&&(typeof path!=='string'||path.split('.').at(-1)!=='dueDate'))throw Error('DUE_DATE_MAPPING_UNCONFIRMED');if(['__proto__','prototype','constructor','sourceFields','cardId'].includes(field))throw Error('MAPPING_PATH_INVALID');const v=read(item,path);if(v!==undefined)r[field]=copy(v)}if(own(item,'id')&&r.id!==item.id)throw Error('CAPTURE_ID_MAPPING_DIVERGENT');for(const f of ['type','occurrenceMonth','splitId','originId'])if(own(item,f)&&own(r,f)&&stable(item[f])!==stable(r[f]))throw Error('CAPTURE_IDENTITY_MAPPING_DIVERGENT');const key=remoteOccurrenceKey(capture.profileId,{...item,id:r.id})||r.id;if(!text(r.id)||seen.has(key))throw Error('CAPTURE_ID_INVALID');seen.add(key);for(const field of ['type','occurrenceMonth','originId','splitId','installmentNumber','installmentsCount'])if(own(item,field)&&!own(r,field))r[field]=copy(item[field]);rows.push(r)}
   const pagination=mapping.paginationPath?read(payload,mapping.paginationPath):undefined;
   if(pagination!==undefined){if(!pagination||typeof pagination.hasMore!=='boolean')throw Error('PAGINATION_INVALID');if(own(pagination,'totalCount')){if(!Number.isSafeInteger(pagination.totalCount)||pagination.totalCount<rows.length||total!==null&&total!==pagination.totalCount)throw Error('PAGINATION_CONTRADICTORY');total=pagination.totalCount}if(own(pagination,'offset')&&pagination.offset!==req.arguments.offset)throw Error('PAGINATION_CONTRADICTORY');if(pagination.hasMore){if(!Number.isInteger(pagination.nextOffset)||pagination.nextOffset!==next+items.length||!items.length)throw Error('PAGINATION_INVALID');next=pagination.nextOffset}else{if(total!==null&&total!==rows.length)throw Error('PAGINATION_CONTRADICTORY');finished=true}}
   else if(capture.pages.length>1)throw Error('PAGINATION_UNCONFIRMED');
