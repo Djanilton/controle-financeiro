@@ -26,7 +26,7 @@
       }else{
         let lastInvoiceView=false;try{lastInvoiceView=JSON.parse(localStorage.getItem('controle-financeiro-filtros-v1')||'{}').tab==='cardInvoices'}catch{}
         const entryParams=new URL(location.href).searchParams;
-        if((!entryParams.has('area')&&!entryParams.has('mode')&&lastInvoiceView)||entryParams.get('mode')==='invoice-readonly'||entryParams.get('area')==='cardInvoices'){await loadScript('./sources-review-loader.js?v=20261108-assistant');return}
+        if((!entryParams.has('area')&&!entryParams.has('mode')&&lastInvoiceView)||entryParams.get('mode')==='invoice-readonly'||entryParams.get('area')==='cardInvoices'){await loadScript('./sources-review-loader.js?v=contract-readonly-v1');return}
         await Promise.all([loadScript('./vendor/msal-browser.min.js'),loadScript('./vendor/xlsx.full.min.js')]);
         await loadScript('./app-core.js?v=20261022-daily-range');
         await loadScript('./financial-model.js?v=20261107-inss-history');
@@ -54,7 +54,7 @@
         await loadScript('./settings-workspace.js?v=20261107-consolidated');
         await loadScript('./transfer-repair.js?v=20261018-transfers');
         await loadScript('./sidebar.js?v=20261107-responsive-toggle');
-        await loadScript('./minhas-financas-observations.js?v=20261107-income');
+        await loadScript('./minhas-financas-observations.js?v=contract-readonly-v1');
         await loadScript('./minhas-financas-core.js?v=20261102-observations');
         await loadScript('./minhas-financas-ui.js?v=20261102-observations');
         await loadScript('./candidate-sources.js?v=20261107-consolidated');
@@ -64,13 +64,13 @@
         await loadScript('./month-pivot.js?v=20261022-years');
         await loadScript('./financial-charts.js?v=20261024-filtered');
         await loadScript('./month-inputs.js?v=20261107-batch-fixes');
-        await loadScript('./card-invoice-core.js?v=20261107-invoices');
+        await loadScript('./card-invoice-core.js?v=contract-readonly-v1');
         await loadScript('./card-invoice-itau.js?v=20261107-itau');
         await loadScript('./card-invoice-extras.js?v=20261107-itau');
-        await loadScript('./card-invoice-ui.js?v=20261107-invoice-onedrive');
+        await loadScript('./card-invoice-ui.js?v=contract-readonly-v1');
         await loadScript('./invoice-review-history.js?v=20261107-consolidated');
         await loadScript('./invoice-review-store.js?v=20261107-batch');
-        await loadScript('./invoice-review-ui.js?v=20261107-consolidated');
+        await loadScript('./invoice-review-ui.js?v=contract-readonly-v1');
         await loadScript('./inss-history-ui.js?v=20261107-ux-review');
         await loadScript('./private-source-core.js?v=20261107-private');
         await loadScript('./private-cutover-core.js?v=20261107-private');

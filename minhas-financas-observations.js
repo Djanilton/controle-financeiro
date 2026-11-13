@@ -2,7 +2,7 @@
  * Never fetches, persists, retries, deletes, applies, or derives missing fields. */
 (function(root){'use strict';
 const SCHEMA='minhas-financas-observations-v1',CUTOFF='2026-10-01';
-const TYPES={expenses:'Despesa',incomes:'Receita',transfers:'Transferência'},ALIASES={income:'incomes',expense:'expenses',despesa:'expenses',receita:'incomes',transferencia:'transfers'};
+const TYPES={expenses:'Despesa',incomes:'Receita',transfers:'Transferência'},ALIASES={transfer:'transfers',income:'incomes',expense:'expenses',despesa:'expenses',receita:'incomes',transferencia:'transfers'};
 const copy=x=>structuredClone(x),own=(o,k)=>Object.hasOwn(o||{},k),text=x=>typeof x==='string'&&x.length>0;
 const fail=code=>{throw Object.assign(Error(code),{code})};
 const date=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T00:00:00Z'))&&new Date(v+'T00:00:00Z').toISOString().slice(0,10)===v;
@@ -30,7 +30,7 @@ function minor(value,scale){
  const n=BigInt((m[1]||'')+m[2]+(m[3]||'').padEnd(scale,'0'));return n<=BigInt(Number.MAX_SAFE_INTEGER)&&n>=BigInt(Number.MIN_SAFE_INTEGER)?Number(n):null;
 }
 function money(t,context=null,request=null){
- if(own(t.monetaryProjection,'equivalentMinor')){const evidence=projectionEvidence(t,context,request);if(!evidence.proposalAllowed)fail(evidence.code);return t.presentationAmount}
+ if(own(t.monetaryProjection,'equivalentMinor')){const evidence=projectionEvidence(t,context,request);if(!evidence.proposalAllowed)fail(evidence.code);return Number(integerMinor(t.monetaryProjection.equivalentMinor))/100}
 
  const p=t.monetaryProjection,s=t.monetaryStatus?.presentationAmount??p?.monetaryStatus?.presentationAmount;
  // This recognized field layout is intentionally narrow. Unknown provider shapes
@@ -69,22 +69,24 @@ function coverageEvidence(context){return coverageContexts(context).map(([path,c
 function projectionEvidence(t,context,req){
  const p=t?.monetaryProjection;
  if(!p||typeof p!=='object'||Array.isArray(p))return {format:'MISSING',accepted:false,proposalAllowed:false,code:'MONEY_UNCONFIRMED',coverage:coverageEvidence(context)};
- const native=p.native,baseKnown=text(p.baseCurrency)&&Number.isInteger(p.baseScale)&&p.baseScale>=0&&p.baseScale<=6;
+ const native=p.native,baseKnown=/^[A-Z]{3}$/.test(p.baseCurrency||'')&&Number.isInteger(p.baseScale)&&p.baseScale>=0&&p.baseScale<=6;
  const nativeKnown=!!native&&text(native.currency)&&Number.isInteger(native.scale)&&native.scale>=0&&native.scale<=6&&integerMinor(native.minor)!==null;
  if(!own(p,'equivalentMinor'))return {format:'LOCAL_REVIEWED_LEGACY',accepted:baseKnown&&nativeKnown,proposalAllowed:false,code:'LEGACY_VALIDATOR_REQUIRED',coverage:coverageEvidence(context)};
- const equivalent=integerMinor(p.equivalentMinor),major=minor(t.presentationAmount,p.baseScale);
- const representation=baseKnown&&nativeKnown&&equivalent!==null;
- const matchesMajor=major!==null&&equivalent===BigInt(major);
- // Equal totals or snapshot IDs do not bind aggregate coverage to one occurrence.
- // Keep new-shape proposals blocked until an official binding is documented.
- const proof=null; // No documented per-occurrence coverage binding has been established.
- const statusKnown=['confirmed','definitive'].includes(p.status)&&own(p,'pendingReason')&&p.pendingReason===null;
+ const equivalent=typeof p.equivalentMinor==='string'?integerMinor(p.equivalentMinor):null;
+ const representation=baseKnown&&equivalent!==null&&equivalent<=BigInt(Number.MAX_SAFE_INTEGER)&&equivalent>=BigInt(Number.MIN_SAFE_INTEGER)&&minor(Number(equivalent)/(10**p.baseScale),p.baseScale)===Number(equivalent);
+ // The canonical equivalent belongs to this exact transaction, not an aggregate.
+ // presentationAmount/amount/fullAmount have separate semantics; never substitute them.
+ const binding=identity({...context?.data,transaction:t},req,req?.profileId,context?.metadata).code==='DETAIL_IDENTITY_CONFIRMED';
+ const statusKnown=p.status==='confirmed'&&own(p,'pendingReason')&&p.pendingReason===null;
  const supplemental=t.monetaryStatus?.presentationAmount;
- const statusCompatible=supplemental==null||['confirmed','definitive'].includes(supplemental);
- const code=!representation?'PROJECTION_VALUE_UNCONFIRMED':!matchesMajor?'PRESENTATION_AMOUNT_MISMATCH':!statusKnown||!statusCompatible?'PROJECTION_STATUS_UNCONFIRMED':!proof?'MONETARY_SCOPE_UNCONFIRMED':p.baseCurrency!=='BRL'||p.baseScale!==2?'BASE_CURRENCY_UNSUPPORTED':'MONEY_CONFIRMED_INDIVIDUAL';
- return {format:'OCCURRENCE_EQUIVALENT_MINOR',accepted:representation,proposalAllowed:code==='MONEY_CONFIRMED_INDIVIDUAL',code,coverage:coverageEvidence(context)};
+ const statusCompatible=supplemental==null||supplemental==='confirmed';
+ const individual=coverageContexts(context).filter(([,c])=>c.kind==='detail.transaction');
+ const coverageValid=individual.every(([,c])=>c.complete===true&&c.hasEstimates===false&&Array.isArray(c.pendingNative)&&c.pendingNative.length===0&&integerMinor(c.finalMinor)===equivalent&&(!own(c,'baseCurrency')||c.baseCurrency===p.baseCurrency)&&(!own(c,'baseScale')||c.baseScale===p.baseScale));
+ const projectionFlags=(!own(p,'complete')||p.complete===true)&&(!own(p,'hasEstimates')||p.hasEstimates===false)&&(!own(p,'pendingNative')||Array.isArray(p.pendingNative)&&!p.pendingNative.length)&&(!own(p,'finalMinor')||integerMinor(p.finalMinor)===equivalent);
+ const code=!representation?'PROJECTION_VALUE_UNCONFIRMED':!binding?'MONETARY_SCOPE_UNCONFIRMED':!statusKnown||!statusCompatible||!projectionFlags?'PROJECTION_STATUS_UNCONFIRMED':!coverageValid?'MONETARY_COVERAGE_CONTRADICTORY':p.baseCurrency!=='BRL'||p.baseScale!==2?'BASE_CURRENCY_UNSUPPORTED':'MONEY_CONFIRMED_INDIVIDUAL';
+ return {format:'OCCURRENCE_EQUIVALENT_MINOR',accepted:representation,proposalAllowed:code==='MONEY_CONFIRMED_INDIVIDUAL',code,coverage:coverageEvidence(context),coverageSummed:false};
 }
-const DETAIL_FIELDS=['type','month','profile.id','transaction.id','transaction.profileId','transaction.dueDate','transaction.createdAt','transaction.referenceDate','transaction.effectiveDate','transaction.completed','transaction.includedInTotals','transaction.monthlySavings','transaction.recurrence','transaction.installmentNumber','transaction.installmentsCount','transaction.account.id','transaction.card.id','transaction.card.name','transaction.card.description','currency','transaction.currency','transaction.amount','transaction.presentationAmount','transaction.monetaryStatus','transaction.monetaryProjection.native','transaction.monetaryProjection.native.minor','transaction.monetaryProjection.native.currency','transaction.monetaryProjection.native.scale','transaction.monetaryProjection.baseCurrency','transaction.monetaryProjection.baseScale','transaction.monetaryProjection.status','transaction.monetaryProjection.equivalentMinor','transaction.monetaryProjection.pendingReason','transaction.monetaryProjection.snapshotId','monetaryCoverage','monetaryCoverage.kind','monetaryCoverage.complete','monetaryCoverage.hasEstimates','monetaryCoverage.finalMinor','monetaryCoverage.pendingNative'];
+const DETAIL_FIELDS=['type','month','profile.id','transaction.id','transaction.profileId','transaction.dueDate','transaction.createdAt','transaction.referenceDate','transaction.effectiveDate','transaction.completed','transaction.includedInTotals','transaction.monthlySavings','transaction.recurrence','transaction.installmentNumber','transaction.installmentsCount','transaction.account.id','transaction.card.id','transaction.card.name','transaction.card.description','currency','transaction.currency','transaction.originId','transaction.splitId','transaction.amount','transaction.fullAmount','transaction.presentationAmount','transaction.monetaryStatus','transaction.monetaryProjection.native','transaction.monetaryProjection.native.minor','transaction.monetaryProjection.native.currency','transaction.monetaryProjection.native.scale','transaction.monetaryProjection.baseCurrency','transaction.monetaryProjection.baseScale','transaction.monetaryProjection.status','transaction.monetaryProjection.equivalentMinor','transaction.monetaryProjection.pendingReason','transaction.monetaryProjection.snapshotId','monetaryCoverage','monetaryCoverage.kind','monetaryCoverage.complete','monetaryCoverage.hasEstimates','monetaryCoverage.finalMinor','monetaryCoverage.pendingNative'];
 function at(o,path){for(const k of path.split('.')){if(!o||typeof o!=='object'||!own(o,k))return {presence:'ABSENT'};o=o[k]}return {presence:o===null?'NULL':o===undefined?'UNKNOWN':'PRESENT',value:o}}
 const linkNames=(links,profile,id)=>new Set(links.filter(l=>l.profileId===profile&&l.remoteId===id&&text(l.localName)).map(l=>l.localName));
 function linkEvidence(links,profile,id,kind){const n=linkNames(links,profile,id).size;return [n===1,kind+(n===1?'_LINK_CONFIRMED':n>1?'_LINK_AMBIGUOUS':'_LINK_UNCONFIRMED')]}
@@ -200,5 +202,5 @@ function compare(base,packet,{window,accountLinks=[],cardLinks=[],protectedRecor
 }
 const LIMITS={Sync:{daily:500,monthly:3000},'Sync Bank':{daily:1000,monthly:6000},'Sync Bank Pro':{daily:2000,monthly:10000}};
 function callBudget({plan,dayUsed,monthUsed,calls}={}){if(!LIMITS[plan]||![dayUsed,monthUsed,calls].every(n=>Number.isSafeInteger(n)&&n>=0))return {allowed:false,code:'QUOTA_UNKNOWN'};return {allowed:dayUsed+calls<=LIMITS[plan].daily&&monthUsed+calls<=LIMITS[plan].monthly,code:'EXPLICIT_QUOTA_PLAN_ONLY',executesCalls:false}}
-const api={SCHEMA,collect,compare,inspectDetailsOnly,identity,calendarDue,projectionEvidence,remoteKey,hasLocalChanges:t=>!!(t.minhasFinancas?.observationVersion&&fingerprint(t)!==t.minhasFinancas.observationVersion),recurrence,dateFormat,fieldState:state,minor,callBudget};root.MinhasFinancasObservations=api;if(typeof module==='object')module.exports=api;
+const api={SCHEMA,readEnvelope:unwrap,identityKey:key,normalizeType:type,collect,compare,inspectDetailsOnly,identity,calendarDue,projectionEvidence,remoteKey,hasLocalChanges:t=>!!(t.minhasFinancas?.observationVersion&&fingerprint(t)!==t.minhasFinancas.observationVersion),recurrence,dateFormat,fieldState:state,minor,callBudget};root.MinhasFinancasObservations=api;if(typeof module==='object')module.exports=api;
 })(globalThis);
