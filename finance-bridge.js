@@ -28,6 +28,7 @@ if(typeof module!=='undefined'){module.exports=root.ObraFinanceBridge;return}
 if(typeof data==='undefined')return;
 let ledgerRows=null,ledgerInitial=null,ledgerDate=null,ledgerCosts=null,ledgerFgts=null,current=null;
 function controlSnapshot(){
+ if(root.InvoiceReviewIntegrated?.active)return null;
  const date=new Date().toLocaleDateString('sv-SE'),rows=allTransactions(),initial=data.initialBalances||[],state=typeof projectState==='function'?projectState():null,costs=state?ConstructionFinance.ownCosts(state):[],costKey=JSON.stringify(costs.map(x=>[x.name,x.planned,x.paid])),fgtsTo=state?.meta?.engine?.config?.dates?.at(-1)?.slice(0,7)||'2061-12',fgtsKey=JSON.stringify([data.sourceTables?.FGTS||[],fgtsTo]);
  if(ledgerRows===rows&&ledgerInitial===initial&&ledgerDate===date&&ledgerCosts===costKey&&ledgerFgts===fgtsKey)return current;
  try{const next=fromLedger(FinanceCore,rows,initial,date,{fgtsProjection:fgtsProjection(FinancialModel,FinanceCore,rows,data.sourceTables||{},date,fgtsTo),account:user?.username,provisionedCosts:costs,sourceImportedAt:data.sources?.map(x=>x.importedAt).sort().at(-1)});

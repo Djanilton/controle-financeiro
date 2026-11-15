@@ -2,6 +2,7 @@
 const SIDEBAR_STORAGE='controle-financeiro-sidebar-compact-v1';
 function setSidebarCompact(compact,persist=false){
  document.body.classList.toggle('sidebar-compact',compact);
+ document.body.classList.toggle('sidebar-mobile-expanded',!compact&&matchMedia('(max-width:720px)').matches);
  document.body.classList.remove('menu-open');
  const button=document.getElementById('menuButton');
  button.setAttribute('aria-expanded',String(!compact));
@@ -14,3 +15,5 @@ function toggleSidebar(){setSidebarCompact(!document.body.classList.contains('si
 let sidebarSaved;try{sidebarSaved=localStorage.getItem(SIDEBAR_STORAGE)}catch{}
 setSidebarCompact(sidebarSaved===null||sidebarSaved===undefined?matchMedia('(max-width: 1024px)').matches:sidebarSaved==='true');
 document.getElementById('menuButton').onclick=toggleSidebar;
+// Entering the narrow layout starts compact; explicit expansion still works afterwards.
+matchMedia('(max-width:720px)').addEventListener('change',event=>{if(event.matches)setSidebarCompact(true)});

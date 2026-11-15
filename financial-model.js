@@ -52,7 +52,7 @@ function investmentRows(transactions,initial,tables,options){
    prior=closing??opening;
   }
  }
- for(const [kind,name] of [['Neos Prev','Néos'],['INSS','INSS'],['FGTS','FGTS']])for(const x of benefitMonthly(kind,tables,from,to,asOf,transactions))rows.push({institution:name,...x,income:x.contribution+x.earnings});
+ for(const [kind,name] of [['Neos Prev','Néos'],['INSS','INSS'],['FGTS','FGTS']])for(const x of benefitMonthly(kind,tables,from,to,asOf,transactions))rows.push({institution:name,...x,income:x.contribution+x.earnings,redeemable:kind!=='INSS',assetEligible:kind!=='INSS'});
  return rows
 }
 function financingTransactions(transactions){return transactions.filter(x=>x.kind==='Despesa'&&/financiamento.*(?:caixa|casa)|caixa.*financiamento/.test(C.normalize(x.description))&&(/\/\s*(?:401|411)\b/.test(x.installments+' '+x.description)||/construcao/.test(C.normalize(x.description))&&/\/\s*12\b/.test(x.installments+' '+x.description)))}
@@ -71,7 +71,7 @@ function summaryRows(transactions,initial,tables,investments,loans,from,to){
  return months(from,to).map(m=>{const source=sources.get(m)||{},row=Object.fromEntries(keys.map(k=>[k,k==='Mês'?m:C.pick(source,k)])),bank=n=>bankIndex.get(m+'|'+C.normalize(n))||0,position=n=>positions.get(m+'|'+n)?.closing,loan=debt.get(m),f=flows.get(m)||{};
  row.BB=bank('Banco do Brasil');row.Itaú=bank('Itaú');row['Investimento Itaú']=position('Itaú')??bank('Investimento Itaú');row.Sofisa=position('Sofisa')??null;row['Neos Prev']=position('Néos')??null;row['Prev INSS']=position('INSS')??null;row.FGTS=position('FGTS')??null;
  row.Despesas=-(f.expenses||0)+(loan?f.modeled||0:0)-(loan?.installment||0);row.Empréstimos=loan?-loan.closing:Object.keys(source).length?C.number(C.pick(source,'Empréstimos')):null;
- row.Prev=['Neos Prev','Prev INSS','FGTS'].reduce((s,k)=>s+(Number(row[k])||0),0);row.Invest=['Investimento Itaú','XP','Clear','Toro(PI)','Avenue','BTG Pactual','Binance','RCI','Sofisa'].reduce((s,k)=>s+C.number(row[k]),0);row.Ativos=row.Prev+row.Invest+['Casa','Carros','BB','Itaú'].reduce((s,k)=>s+C.number(row[k]),0);row.Passivo=C.number(row.Empréstimos);row.Total=row.Ativos+row.Passivo;row['Saldos não informados']=['Neos Prev','Prev INSS','FGTS','Sofisa'].filter(k=>row[k]===null).join(', ');row['Salário Liq']=f.salary||0;row['Depósito Investimento']=f.deposit||0;row['Saque Investimento']=f.withdrawal||0;return row});
+ row.Prev=['Neos Prev','FGTS'].reduce((s,k)=>s+(Number(row[k])||0),0);row.Invest=['Investimento Itaú','XP','Clear','Toro(PI)','Avenue','BTG Pactual','Binance','RCI','Sofisa'].reduce((s,k)=>s+C.number(row[k]),0);row.Ativos=row.Prev+row.Invest+['Casa','Carros','BB','Itaú'].reduce((s,k)=>s+C.number(row[k]),0);row.Passivo=C.number(row.Empréstimos);row.Total=row.Ativos+row.Passivo;row['Saldos não informados']=['Neos Prev','Prev INSS','FGTS','Sofisa'].filter(k=>row[k]===null).join(', ');row['Salário Liq']=f.salary||0;row['Depósito Investimento']=f.deposit||0;row['Saque Investimento']=f.withdrawal||0;return row});
 }
 root.FinancialModel={months,enrich,benefitRows,benefitMonthly,investmentRows,financingTransactions,currentLoanBalance,presentLoanRows,loanRows,summaryRows};if(typeof module!=='undefined')module.exports=root.FinancialModel;
 })(typeof globalThis!=='undefined'?globalThis:this);

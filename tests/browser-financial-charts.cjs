@@ -1,9 +1,9 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),os=require('node:os'),assert=require('node:assert/strict');
-const {chromium}=require(path.join(os.homedir(),'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'));
+const {chromium,launchOptions}=require('./browser-runtime.cjs');
 (async()=>{
  const root=path.resolve(__dirname,'..'),server=http.createServer((req,res)=>{let file=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname);if(!file.startsWith(root+path.sep))file=path.join(root,'index.html');if(fs.existsSync(file)&&fs.statSync(file).isDirectory())file=path.join(file,'index.html');if(!fs.existsSync(file))return res.writeHead(404).end();res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');fs.createReadStream(file).pipe(res)});let browser;
  try{
-  await new Promise(r=>server.listen(0,'127.0.0.1',r));browser=await chromium.launch({headless:true,executablePath:path.join(process.env.PROGRAMFILES,'Google/Chrome/Application/chrome.exe')});
+  await new Promise(r=>server.listen(0,'127.0.0.1',r));browser=await chromium.launch(launchOptions());
   const p=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.route('https://graph.microsoft.com/**',r=>r.abort());await p.goto('http://127.0.0.1:'+server.address().port);await p.waitForFunction(()=>typeof appReady!=='undefined'&&appReady);
   await p.evaluate(()=>{
    appReady=false;user=null;data.sourceTables={};data.sources=[];data.initialBalances=[{account:'Conta teste',year:2026,amount:100}];manual.transactions=[];
@@ -27,7 +27,8 @@ const {chromium}=require(path.join(os.homedir(),'.cache/codex-runtimes/codex-pri
   const payroll=p.locator('[data-finance-chart="payroll-rubrics"]');assert.equal(await payroll.locator('[data-chart-series]').count(),2);
   await p.locator('#payrollRubrics summary').click();await p.locator('#payrollRubrics input[value="Salário"]').check();assert.equal(await payroll.locator('[data-chart-series]').count(),1);assert.match(await payroll.locator('[data-chart-series]').getAttribute('data-chart-series'),/Salário/);assert.equal(await p.locator('.payroll-matrix tbody tr').count(),1);
   await p.locator('#payrollRubrics input[value="IRRF"]').check();assert.equal(await payroll.locator('[data-chart-series]').count(),2);assert.equal(await p.locator('.payroll-matrix tbody tr').count(),2);
-  await payroll.locator('[data-chart-tip]').first().focus();assert.ok(await p.locator('.chart-tooltip').isVisible());assert.match(await p.locator('.chart-tooltip').innerText(),/Salário/);
+  // Native focus scrolled an offscreen SVG mark smoothly, then the intentional scroll handler hid its tooltip.
+  const mark=payroll.locator('[data-chart-tip]').first();await mark.evaluate(el=>el.scrollIntoView({behavior:'instant',block:'center',inline:'center'}));await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await mark.evaluate(el=>el.focus({preventScroll:true}));await p.locator('.chart-tooltip').waitFor({state:'visible'});assert.equal(await mark.evaluate(el=>document.activeElement===el),true);assert.ok(await p.locator('.chart-tooltip').isVisible());assert.match(await p.locator('.chart-tooltip').innerText(),/Salário/);
   await p.setViewportSize({width:390,height:844});await p.evaluate(()=>{setSidebarCompact(true);render()});assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));assert.equal(await payroll.locator('[data-chart-series]').count(),2);
   await p.screenshot({path:path.join(os.tmpdir(),'financial-charts-payroll-mobile.png'),fullPage:true});assert.deepEqual(errors,[]);console.log(JSON.stringify({passed:true,tabs:5,multiRubrics:true,allFilteredTransactions:151,mobile:true,errors}));
  }finally{if(browser)await browser.close();server.closeAllConnections();server.close()}

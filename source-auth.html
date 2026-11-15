@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Retorno de autorização — leitura de fontes</title></head>
+<body><p id="status" role="status">Retorno da autorização de leitura. Volte à janela de conferência.</p><script>
+// Dedicated callback. Never loads the operational application, with or without an opener.
+(async()=>{if(!window.opener)return;try{await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='./vendor/msal-redirect-bridge.min.js';s.onload=resolve;s.onerror=reject;document.head.append(s)});await window.msalRedirectBridge.broadcastResponseToMainFrame()}catch{document.getElementById('status').textContent='Retorno não concluído. Volte à conferência e conecte novamente por ação explícita.'}})();
+</script></body></html>

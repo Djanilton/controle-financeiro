@@ -1,3 +1,13 @@
+# Integração Minhas Finanças — regra vigente em 02/11/2026
+
+O fornecedor confirmou ausência de snapshot estável, histórico de exclusões e contrato incremental. O MCP agora serve somente para **comparação candidata por observações**; não substitui períodos nem interpreta ausência como exclusão/cancelamento. Importação automática do pacote antigo e MCP direto permanecem desabilitados. Excel mantém seu fluxo independente. Nenhuma aplicação ou sincronização foi habilitada.
+
+Contrato, de/para, captura local, limitações monetárias, testes e próximos passos: [MCP por observações](MCP_OBSERVACOES.md). Os registros abaixo são históricos e **não autorizam o fluxo antigo de aplicação/importação**, nem suas afirmações de completude.
+
+---
+
+## Histórico preservado — regras anteriores superadas
+
 # Integração pelo plugin — 21/10/2026
 
 ## Retirada do aplicativo antigo

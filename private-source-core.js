@@ -1,0 +1,11 @@
+/* Private path configuration and read-only discovery planning. No network or filesystem mutations. */
+(function(root){'use strict';
+function path(value){if(typeof value!=='string')throw Error('PRIVATE_PATH_REQUIRED');const p=value.trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');if(!p||/[:?#\u0000-\u001f]/.test(p)||p.split('/').some(x=>!x||x==='.'||x==='..'))throw Error('PRIVATE_PATH_INVALID');return p}
+function configure(rootPath,previous={}){const p=path(rootPath);return {...previous,externalDataRoot:p,investmentReportsFolder:p+'/Alocação Investimentos',invoiceReportsFolder:p+'/Faturas cartão',reportsFolder:p+'/Relatório App Minhas Finanças',privateBasesFolder:p+'/Dados privados/Bases',privateBackupsFolder:p+'/Dados privados/Backups',privateReconciliationFolder:p+'/Dados privados/Conciliações',privateCandidatesFolder:p+'/Dados privados/Revisões candidatas'}}
+function version(item){return item.eTag?String(item.eTag):item.file?.hashes?.sha256Hash?'sha256:'+item.file.hashes.sha256Hash:null}
+function plan(items,manifest={}){return items.map(item=>({item,version:version(item),status:!item.id?'invalid':version(item)&&manifest[item.id]?.version===version(item)?'unchanged':manifest[item.id]?'changed':'new'}))}
+function years(currentYear,knownMonths=[],historical=false,folders=[]){if(!Number.isInteger(currentYear)||currentYear<2000||currentYear>2099)throw Error('YEAR_INVALID');return historical?folders.filter(x=>/^20\d{2}$/.test(x.name)).map(x=>x.name):[String(currentYear),String(currentYear-1)]}
+function annualFolders(folders,currentYear,{historical=false,includeBaseline=false}={}){const allowed=years(currentYear,[],historical,folders);return folders.filter(f=>allowed.includes(f.name)||includeBaseline&&f.name==='base inicial')}
+function operationalInventory(items){const names=new Set(['controle-financeiro-app.json','dados-construcao-controle-financeiro.json']);return items.map(i=>({id:i.id,name:i.name,eTag:i.eTag||null,size:i.size,role:names.has(i.name)?'operational':i.name==='dados-completos.json'?'legacy-read-only':/backup/i.test(i.name)?'backup':'original-or-unclassified',copyEligible:names.has(i.name)}))}
+const api={path,configure,version,plan,years,annualFolders,operationalInventory};if(typeof module==='object'&&module.exports)module.exports=api;else root.PrivateSourceCore=api;
+})(globalThis);

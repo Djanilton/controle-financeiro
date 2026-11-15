@@ -1,0 +1,5 @@
+/* Prepare-only merge for private invoice history. No Graph writes or active-base dependency. */
+(function(root){'use strict';const copy=structuredClone,stable=x=>JSON.stringify(x,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+function prepare(local,remote,{etag}={}){if(!Array.isArray(local)||!Array.isArray(remote)||!etag)throw Error('PRIVATE_HISTORY_ETAG_REQUIRED');const byId=new Map(),conflicts=[];for(const entry of [...remote,...local]){if(!entry?.id||!['invoice-review-history-v1','invoice-review-event-v1'].includes(entry.schema))throw Error('PRIVATE_HISTORY_ENTRY_INVALID');if(byId.has(entry.id)&&stable(byId.get(entry.id))!==stable(entry)){conflicts.push(entry.id);continue}byId.set(entry.id,copy(entry))}return {schema:'private-invoice-history-sync-plan-v1',applyAllowed:false,expectedETag:etag,backup:copy(remote),entries:[...byId.values()],conflicts,passed:conflicts.length===0}}
+const api={prepare};if(typeof module==='object'&&module.exports)module.exports=api;else root.PrivateHistorySync=api;
+})(globalThis);
