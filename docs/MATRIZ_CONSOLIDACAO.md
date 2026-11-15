@@ -63,3 +63,8 @@ Implementado: loader e cliente Microsoft exclusivos para conferência, capacidad
 | Motores / rotas privadas antigas | Preservados | Sem migração, sem novo motor, confrontos privados continuam pendentes |
 
 Plano de publicação/rollback e impedimentos em INTEGRACAO_OFICIAL.md. Nenhuma publicação de produção autorizada por mera aprovação dos testes.
+
+
+### Fechamento do bootstrap — PR #12
+
+O limite pós-entrada acima foi superado: política antecipada, leitura local sem manutenção, verificação de concorrência antes da cópia e testes físicos antes do primeiro script. Rotas direta/última aba salva, diário completo/incompleto, cliente MSAL e timers cobertos; saída retoma o ciclo operacional anterior. Sem remoção global de INSS/construção/sync. Merge/publicação técnica condicionados ao CI do SHA final; ambiguidades de multicategorias permanecem bloqueadas e opcionais. Sem migração privada ou consulta MCP real.

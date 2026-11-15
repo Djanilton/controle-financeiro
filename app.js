@@ -29,7 +29,7 @@ function readFinanceWorkbook(buffer){
 }
 function loadJson(key,fallback){try{return {...fallback,...JSON.parse(localStorage.getItem(key)||'{}')}}catch{return fallback}}
 function saveManual(){localStorage.setItem(MANUAL,JSON.stringify(manual))}
-function saveSettings(){localStorage.setItem(STORAGE,JSON.stringify(settings))}
+function saveSettings(){if(globalThis.InvoiceReviewIntegrated?.active)return;localStorage.setItem(STORAGE,JSON.stringify(settings))}
 function allTransactions(){return [...data.transactions,...manual.transactions].sort((a,b)=>(b.date||'').localeCompare(a.date||''))}
 function allInvestments(){return [...data.investments,...manual.investments]}
 function allLoans(){return [...data.loans,...manual.loans]}
@@ -119,5 +119,5 @@ async function importOneDriveReports(){try{toast('Procurando os relatórios mais
 function saveSettingsForm(e){e.preventDefault();const before=settings.clientId;settings={...settings,...formData(e.currentTarget)};saveSettings();if(before!==settings.clientId){auth=null;user=null;authRedirectHandled=false}render();toast('Configurações salvas neste navegador.')}
 async function clearLocalData(){if(!confirm('Apagar todos os dados importados e lançamentos manuais deste navegador?'))return;data={transactions:[],netWorth:[],initialBalances:[],investments:[],loans:[],auxiliary:[],sources:[]};manual={transactions:[],investments:[],loans:[]};saveManual();await dbSet('main',data);render();toast('Dados locais apagados.')}
 
-async function init(){try{const cached=await dbGet('main');if(cached)data={...data,...cached}}catch(e){toast(`Armazenamento local: ${e.message}`)}$('fileInput').onchange=e=>{importFiles([...e.target.files]).catch(err=>toast(`Importação: ${err.message}`));e.target.value=''};$('menuButton').onclick=toggleSidebar;render();try{if(settings.clientId)await readyAuth()}catch{}if(user)render();if(user&&!data.sources.length)await importOneDriveWorkbook()}
+async function init(){try{const cached=await dbGet('main');if(globalThis.InvoiceReviewIntegrated?.boot)InvoiceReviewIntegrated.localMain=JSON.stringify(cached??null);if(cached)data={...data,...cached}}catch(e){toast(`Armazenamento local: ${e.message}`)}$('fileInput').onchange=e=>{importFiles([...e.target.files]).catch(err=>toast(`Importação: ${err.message}`));e.target.value=''};$('menuButton').onclick=toggleSidebar;render();if(globalThis.InvoiceReviewIntegrated?.active)return;try{if(settings.clientId)await readyAuth()}catch{}if(user)render();if(user&&!data.sources.length)await importOneDriveWorkbook()}
 // A inicialização acontece após o carregamento dos cálculos e controles.

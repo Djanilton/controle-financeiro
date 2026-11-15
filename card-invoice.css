@@ -61,3 +61,5 @@
 .invoice-embedded-base .topbar,.invoice-embedded-base #sourceReadExit{display:none!important}
 .invoice-embedded-base #view{padding:0!important}
 .invoice-embedded-base #invoiceResult{scroll-margin-top:130px}
+/* Embedded document height follows its content, rather than its previous iframe viewport. */
+body.invoice-embedded-base,.invoice-embedded-base .shell{min-height:0}

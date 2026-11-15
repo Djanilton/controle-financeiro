@@ -34,7 +34,7 @@ async function downloadAppState(item){
 }
 function validateAppState(value){if(![undefined,1].includes(value?.schema)||!value?.data||!Array.isArray(value.data.transactions)||!Array.isArray(value.data.sources)||!value.manual||!Array.isArray(value.manual.transactions))throw Error('Base privada do aplicativo inválida. Os dados deste dispositivo foram preservados.');return {...value,schema:1}}
 async function readAppState({force=false}={}){
- await readyAuth();if(!user||appSync.reviewLocked)return false;if(!force&&Date.now()-appLastCheck<60000&&appRemote)return false;
+ if(globalThis.InvoiceReviewIntegrated?.active)return false;await readyAuth();if(!user||appSync.reviewLocked)return false;if(!force&&Date.now()-appLastCheck<60000&&appRemote)return false;
  const item=await appStateMetadata();appLastCheck=Date.now();
  if(!item){appRemote=null;if(hasAppData()){appSync.dirty=true;saveSyncMeta();await saveAppState()}return false}
  if(item.eTag===appSync.etag&&appRemote){if(appSync.dirty)await saveAppState();return false}
@@ -57,7 +57,7 @@ async function saveAppState(){
 }
 async function connectAppState(){if(appSyncTask)return appSyncTask;try{await readAppState({force:true})}catch(e){appSyncError(e)}}
 const stateLoginBefore=login;login=async function(){await stateLoginBefore();await connectAppState()};
-const stateInitBefore=init;init=async function(){await stateInitBefore();try{const journal=await dbGet('reconciliation-journal');if(journal&&journal.stage!=='complete'){appSync.reviewLocked=true;appConflictLocked=true;saveSyncMeta();appSyncStatus='Conciliação interrompida. Gravação bloqueada. Exporte a cópia de recuperação e compare novamente antes de aplicar.'}}catch(error){appStorageFailure(error);appSync.reviewLocked=true;appConflictLocked=true}appSignature=appStateSignature();appReady=true;await connectAppState()};
+const stateInitBefore=init;init=async function(){await stateInitBefore();try{const journal=await dbGet('reconciliation-journal');if(journal&&journal.stage!=='complete'){appSync.reviewLocked=true;appConflictLocked=true;if(!globalThis.InvoiceReviewIntegrated?.active)saveSyncMeta();appSyncStatus='Conciliação interrompida. Gravação bloqueada. Exporte a cópia de recuperação e compare novamente antes de aplicar.'}}catch(error){appStorageFailure(error);appSync.reviewLocked=true;appConflictLocked=true}appSignature=appStateSignature();appReady=true;await connectAppState()};
 async function authorizeAppState(){await constructionWriteToken(true);await connectAppState();await saveAppState();toast(appSyncStatus);render()}
 async function useCloudState(){if(appSync.reviewLocked)throw Error('Conclua a conciliação antes de substituir a base local.');if(!confirm('Carregar a versão da nuvem? A cópia deste dispositivo será guardada para recuperação.'))return;await appDbBefore('before-cloud-sync',{data:structuredClone(data),manual:structuredClone(manual)});const previousSync={...appSync};appSync.dirty=false;appSync.etag='';saveSyncMeta();try{await readAppState({force:true})}catch(error){appSync=previousSync;saveSyncMeta();throw error}}
 async function exportStateBackup(previous=false){const value=previous?await dbGet('before-cloud-sync'):appStateData();if(!value)return toast('Nenhuma cópia anterior neste dispositivo.');const a=document.createElement('a'),url=URL.createObjectURL(new Blob([JSON.stringify(value)],{type:'application/json'}));a.href=url;a.download='controle-financeiro-'+(previous?'copia-anterior':'backup')+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}

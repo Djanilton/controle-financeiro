@@ -4,7 +4,8 @@ const FILTER_STORAGE='controle-financeiro-filtros-v1';
 const filterStates=()=>({transactions:filters,expenses:expenseFilters,balances:balanceFilters,investments:investmentFilters,loans:loanFilters,summary:summaryFilters,reserve:reserveFilters});
 try{const saved=JSON.parse(localStorage.getItem(FILTER_STORAGE)||'{}');for(const [name,state] of Object.entries(filterStates())){const source=saved[name];if(source&&typeof source==='object'&&!Array.isArray(source))for(const key of Object.keys(state))if(Object.hasOwn(source,key)){const v=source[key];if((key==='from'||key==='to')&&v&&!/^[1-9]\d{3}-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01]))?$/.test(v))continue;if(typeof v==='string'||Array.isArray(v)&&v.every(x=>typeof x==='string'))state[key]=v}}if(NAV.some(x=>x[0]===saved.tab))tab=saved.tab}catch{}
 const requestedArea=new URL(location.href).searchParams.get('area'),requestedTab=requestedArea==='import'?'settings':requestedArea;if(NAV.some(x=>x[0]===requestedTab))tab=requestedTab;
-function saveFilterState(){try{localStorage.setItem(FILTER_STORAGE,JSON.stringify({...filterStates(),tab}))}catch(e){toast('Não foi possível guardar os filtros neste navegador.')}}
+if(globalThis.InvoiceReviewIntegrated?.boot){if(new URL(location.href).searchParams.get('mode')==='invoice-review')tab='cardInvoices';InvoiceReviewIntegrated.active=tab==='cardInvoices';InvoiceReviewIntegrated.boot=InvoiceReviewIntegrated.active}
+function saveFilterState(){if(globalThis.InvoiceReviewIntegrated?.active)return;try{localStorage.setItem(FILTER_STORAGE,JSON.stringify({...filterStates(),tab}))}catch(e){toast('Não foi possível guardar os filtros neste navegador.')}}
 const stateRender=render;
 render=function(){if(typeof MonthInputEditor!=='undefined'&&MonthInputEditor.deferRender())return;stateRender();saveFilterState()};
 document.addEventListener('click',event=>{if(!event.target.closest?.('.multi-filter'))document.querySelectorAll('.multi-filter[open]').forEach(x=>x.open=false)});

@@ -56,3 +56,4 @@ jobs:
           node tests/browser-mcp-readonly-contract.cjs
           node tests/browser-integrated-invoice.cjs
           node tests/browser-inss-pdf.cjs
+          node tests/browser-invoice-bootstrap.cjs
