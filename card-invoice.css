@@ -56,3 +56,8 @@
 .source-review-mode #invoiceWizardConfirm{margin:14px 0}
 .source-review-mode #invoiceLinkAssistant label{white-space:normal}
 @media(max-width:600px){.source-review-mode #invoiceLinkAssistant dl{grid-template-columns:1fr 1fr;font-size:.88rem}}
+
+/* Embedded review keeps the operational shell and has no second header/navigation. */
+.invoice-embedded-base .topbar,.invoice-embedded-base #sourceReadExit{display:none!important}
+.invoice-embedded-base #view{padding:0!important}
+.invoice-embedded-base #invoiceResult{scroll-margin-top:130px}

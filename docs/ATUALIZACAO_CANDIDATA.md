@@ -252,3 +252,11 @@ A nova área de conciliação não alimenta nem aplica a candidata. Compara font
 Os nomes datados antigos desta documentação são referências históricas e nomes internos canônicos, não obrigação de repetir uma exportação antiga. `CandidateSources.excelReference` reconhece os três padrões de exportação com nova data/hora válidas, mantendo validação de cabeçalhos, vencimento explícito, valores e controles independentes; conserva o nome real em `sourceDocumentName`. Não aceita nomes arbitrários, datas impossíveis ou três arquivos do mesmo tipo.
 
 A ação de relatórios de despesas/receitas/transferências no OneDrive prepara os três arquivos na candidata, sem aplicar a cauda diretamente na rotina. Fontes ausentes, versões empatadas/sem ETag ou leitura alterada bloqueiam a preparação; seleção local continua alternativa. O perfil, cobertura, período e controles independentes exigem revisão própria. Datas/nomes corretos não comprovam completude. O motor de substituição por vencimento e seus bloqueios de MCP não foram relaxados.
+
+## Precisão e escopo dos controles — integração 15/11/2026
+
+Resíduos exclusivamente binários de poucas ULP, com limite absoluto, não invalidam centavos comprovados; precisão monetária adicional real continua bloqueada. O valor original permanece na fonte privada.
+
+`expectedCount`/`expectedTotalMinor` e `independentControl` continuam obrigatórios e se referem às **linhas do arquivo completo**, mesmo ao selecionar apenas um mês. `windowControl` opcional comprova separadamente `from`, `to`, `expectedCount` e `expectedTotalMinor` das linhas com vencimento nessa janela. Controle da janela não substitui o controle do arquivo nem prova cobertura sozinho. A interface identifica os controles como arquivo completo; a prévia identifica a janela selecionada. Bloqueio de conciliação e ausência de aplicação automática preservados.
+
+Multicategorias sem identidade/semântica individuais comprovadas não são consolidadas por aproximação: `SPLIT_MAPPING_REQUIRES_REVIEW`, evidência preservada, nenhuma proposta por inferência. Não confundir quantidade de linhas por categoria com quantidade comprovada de ocorrências financeiras.

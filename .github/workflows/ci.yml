@@ -22,6 +22,8 @@ jobs:
         run: |
           npm install --prefix /tmp/ci-browser playwright@1.56.1
           /tmp/ci-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Gerador de PDF sintético
+        run: python -m pip install reportlab==4.4.3
       - name: Navegador com dados sintéticos
         env:
           PLAYWRIGHT_MODULE: /tmp/ci-browser/node_modules/playwright
@@ -52,3 +54,5 @@ jobs:
           node tests/browser-construction-navigation.cjs
           node tests/browser-invoice-assistant.cjs
           node tests/browser-mcp-readonly-contract.cjs
+          node tests/browser-integrated-invoice.cjs
+          node tests/browser-inss-pdf.cjs

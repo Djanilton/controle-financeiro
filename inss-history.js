@@ -17,8 +17,8 @@ function parse(lines,name='CNIS'){
   const line=String(lines[i]).trim();if(/^Rela[çc][ãa]o Previdenci[áa]ria|^Seq\.?\s/i.test(line)){relation='section-'+i;section='unknown'}
   if(/Remunera[çc][õo]es|Compet[êe]ncia\s+Remunera[çc][ãa]o/i.test(line))section='remuneration';if(/Remunera[çc][ãa]o Declarada/i.test(line))section='declared';
   const annual=line.match(/^@CNIS (\d{4}-\d{2}) ([\d.]+,\d{2})$/);if(annual){add(annual[1],'Remuneração INSS',minor(annual[2]),'consolidated-annual-grid',i);continue}
-  const full=line.match(/^(\d{2})\/(\d{4})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\*?\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\*?\s+([\d.]+,\d{2})/);
-  if(full){const m=full[2]+'-'+full[1];if(m<'2019-11')throw Error('ANNUAL_CIVIL_SCOPE_INVALID');add(m,'Remuneração Apurada CNIS',minor(full[3]),'apurada-ano-civil',i);add(m,'Remuneração INSS',minor(full[9]),'consolidada-ano-civil',i);get(m)['Teto CNIS']=minor(full[5])/100;continue}
+  const annualRows=[...line.matchAll(/(?<![\d/])((?:0[1-9]|1[0-2]))\/((?:19|20)\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\*?\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})\*?\s+([\d.]+,\d{2})/g)];
+  if(annualRows.length){for(const full of annualRows){const m=full[2]+'-'+full[1];if(m<'2019-11')throw Error('ANNUAL_CIVIL_SCOPE_INVALID');add(m,'Remuneração Apurada CNIS',minor(full[3]),'apurada-ano-civil',i);add(m,'Remuneração INSS',minor(full[9]),'consolidada-ano-civil',i);get(m)['Teto CNIS']=minor(full[5])/100;}continue}
   // Only competence + remuneration pairs. Do not assign pre-2019 declared wages as "apurada".
   for(const match of line.matchAll(/(?<![\d/])((?:0[1-9]|1[0-2]))\/((?:19|20)\d{2})\s+([\d.]+,\d{2})/g)){
    const m=match[2]+'-'+match[1];add(m,section==='declared'?'Remuneração Histórica Declarada':section==='remuneration'?'Remuneração Histórica Informada':'Remuneração sem classificação',minor(match[3]),section==='declared'?'declared-remuneration':section==='remuneration'?'reported-remuneration-unclassified':'unclassified-remuneration-pair',i);

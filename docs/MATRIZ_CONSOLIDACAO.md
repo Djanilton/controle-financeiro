@@ -50,3 +50,16 @@ Implementado: loader e cliente Microsoft exclusivos para conferência, capacidad
 ## Evolução independente do contrato MCP
 
 `feat/mcp-contrato-leitura`, baseada no PR #8 estabilizado cc35245: contrato de ausência de refresh esclarecido, adaptador somente sintético, valores canônicos por ocorrência/identidade e alias transfer atualizados. Sem ativação real, substituição MCP, migração, merge ou deploy; PR #10 não modificado. A ressalva antiga sobre falta de garantia de não refresh das duas listagens está superada; registros históricos acima continuam descrevendo o estado da época. Matriz detalhada e condições reais em MCP_CONTRATO_LEITURA.md.
+
+## Integração independente — 15/11/2026
+
+| Área | Estágio | Evidência / limite |
+|---|---|---|
+| Base carregada × fatura independente | Implementado/testado sintético | Cópia privada, vínculo humano, leitor existente, cache/histórico; sem reimportação MF obrigatória |
+| Isolamento durante conferência | Validado pós-entrada | Guardas, main/backup físicos, metadados, foco/storage/espera; bootstrap operacional anterior **não comprovado**, bloqueia merge |
+| Resíduo monetário e controles por janela | Testado sintético | ULP limitada, precisão real rejeitada; arquivo completo e janela não confundidos |
+| PDF anual-civil concatenado | Testado com leitor real e PDF sintético | Apurada/consolidada separadas, nenhuma aplicação; PDF privado não examinado |
+| Multicategorias | Bloqueado para consolidação automática | Evidência preservada; identidade/semântica individual não inventadas |
+| Motores / rotas privadas antigas | Preservados | Sem migração, sem novo motor, confrontos privados continuam pendentes |
+
+Plano de publicação/rollback e impedimentos em INTEGRACAO_OFICIAL.md. Nenhuma publicação de produção autorizada por mera aprovação dos testes.
