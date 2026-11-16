@@ -57,3 +57,4 @@ jobs:
           node tests/browser-integrated-invoice.cjs
           node tests/browser-inss-pdf.cjs
           node tests/browser-invoice-bootstrap.cjs
+          node tests/browser-mcp-categories.cjs

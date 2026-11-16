@@ -69,7 +69,7 @@ function observationPreview(base,packet,window,accountLinks,cardLinks,ownedBase)
  return {schema:'controlled-update-preview-v2',mode:'mcp-observations',mappingOnly:result.mappingOnly===true,mappingReport:result.mappingReport,passed:result.passed,activeUnchanged:true,window,snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false,
  operations:[{source:'plugin',mode:'observations',period:window,removed:0,included:result.changes.added}],
  summary:{removed:0,included:result.passed?result.changes.added:0,preserved:base.data.transactions.length+base.manual.transactions.length,conflicting:result.conflicts.length},
- changes:result.changes,pluginChanges:result.changes,conflicts:result.conflicts,notObserved:result.notObserved,proposals:result.proposals,warnings:result.warnings,possibleDeletions:[],
+ changes:result.changes,categoryReports:result.categoryReports||[],pluginChanges:result.changes,conflicts:result.conflicts,notObserved:result.notObserved,proposals:result.proposals,warnings:result.warnings,possibleDeletions:[],
  before:totals([...base.data.transactions,...base.manual.transactions]),after:totals([...candidate.data.transactions,...candidate.manual.transactions]),undo:ownedBase?base:clone(base),candidate};
 }
 function undo(result){return clone(result.undo)}

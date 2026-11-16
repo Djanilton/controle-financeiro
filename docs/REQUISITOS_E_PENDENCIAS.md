@@ -885,3 +885,15 @@ Testes negativos começam antes do primeiro script e verificam main/backup/diár
 **Bloqueio anterior de bootstrap encerrado**, sujeito ao CI final. Multicategorias sem comprovação continuam bloqueadas para consolidação automática; não são motivo para atrasar as funcionalidades independentes. Publicação técnica foi autorizada pelo usuário após segurança/CI; não autoriza alteração financeira, migração, consulta MCP ou leitura de conta real nesta tarefa. Procedimento/rollback e evidências em INTEGRACAO_OFICIAL.md; links e SHA finais no PR #12.
 
 Validação local final do fechamento: **529 testes Node** (incluindo verificadores Python), **29 roteiros Chromium** completos e `git diff --check` aprovados. Inclui teste com MSAL real carregado sem autenticação e teste de autenticação/reconexão inteiramente simulado. Capturas desktop/mobile examinadas; corrigida a altura mínima do documento embarcado que retinha espaço vazio após trocar viewport. Nenhum aceite privado foi presumido. O CI remoto do commit final e o resultado do Pages serão registrados no PR #12.
+
+## 16/11/2026 — multicategorias, branch independente após main 051e654
+
+**Implementado:** normalizador compartilhado do contrato local legado; soma exata por categoria sem pai financeiro duplicado, reconstrução integral verificada para fatura, preservação de IDs/parcela/recorrência e bloqueio de vínculos Excel aproximados/edições locais/fontes protegidas. Corrigida a metainformação de descrição legada nula na reimportação. Interface privada distingue ocorrência/linhas, recortes e motivos de bloqueio, com escape de campos.
+
+**Bloqueado por contrato externo:** normalização automática dos valores individuais de categorySplits em capturas MCP reais. Valor da ocorrência não comprova unidade/escala/escopo dos rateios, nem mesmo com projeções individuais parecidas ou flags locais. Metadados/ajuda consultados não documentam esse schema; não foi feita consulta financeira. Mantido SPLIT_MAPPING_REQUIRES_REVIEW com submotivo específico. Detalhes e perguntas prontas ao fornecedor em MCP_MULTICATEGORIAS.md.
+
+**Segurança:** sem migração de schema, alteração/aplicação de dados reais, sincronização/escrita, exclusão, transporte real ou nova implementação de motor financeiro. PRs #10/#11 preservados. Publicação apenas dos componentes seguros após suíte completa/CI, conforme autorização do usuário. Resultados e links no PR desta branch.
+
+Revisão final: identidade local/remota repetida não é desempatada por categoria/notas; metadados originais adulterados e grupos parciais bloqueiam. Ordem de propriedades e roundtrip JSON não mudam a soma. Validação direcionada cobre 38 testes do normalizador/legado; suíte completa Node/Python e 30 roteiros Chromium executados, com resultados finais e CI registrados no PR antes do merge.
+
+Validação local registrada em 16/11: suíte completa com 558 testes Node/Python aprovada; após revisão de tipagem de IDs, 38 testes direcionados aprovados. O CI do SHA final inclui os dois casos novos de tipagem e todos os 30 roteiros Chromium. Não foram incluídos dados/capturas reais nem alterados os PRs #10/#11.

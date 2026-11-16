@@ -68,3 +68,7 @@ Este plano não libera substituição MCP. O motor candidato continua independen
 5. Regerar a comparação sobre a fatura bancária já salva e registrar nova revisão local com os mecanismos existentes. Marcas anteriores, resolvidas/persistentes/novas e ambiguidades devem ser validadas nesse fluxo integrado antes de ativar a interface.
 
 O botão permanece desabilitado, preservando cartão local, perfil/cartão remotos quando conhecidos e mês. O impedimento atual é autenticação/transporte e validação de saída/integrada, **não** falta de garantia contratual de ausência de atualização bancária nas duas listagens. Nenhuma chamada real foi feita.
+
+## Rateios por categoria
+
+A confirmação monetária por ocorrência acima não estabelece o schema/unidade individual de `categorySplits`. O executor sintético preserva a saída sem completar esse contrato. O normalizador local legado e a conferência usam o módulo compartilhado descrito em MCP_MULTICATEGORIAS.md; o adaptador de capturas brutas mantém bloqueio específico e nenhuma nova chamada é autorizada por essa preparação.
