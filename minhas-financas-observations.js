@@ -1,6 +1,7 @@
 /* Pure candidate comparison. Local capture envelope, NOT a provider snapshot.
  * Never fetches, persists, retries, deletes, applies, or derives missing fields. */
 (function(root){'use strict';
+const Categories=root.MinhasFinancasCategories||(typeof require==='function'?require('./minhas-financas-categories'):null);
 const SCHEMA='minhas-financas-observations-v1',CUTOFF='2026-10-01';
 const TYPES={expenses:'Despesa',incomes:'Receita',transfers:'Transferência'},ALIASES={transfer:'transfers',income:'incomes',expense:'expenses',despesa:'expenses',receita:'incomes',transferencia:'transfers'};
 const copy=x=>structuredClone(x),own=(o,k)=>Object.hasOwn(o||{},k),text=x=>typeof x==='string'&&x.length>0;
@@ -96,8 +97,8 @@ function inspectDetailsOnly(packet,{accountLinks=[],cardLinks=[]}={}){
  for(let index=0;index<packet.details.length;index++){
   const entry=packet.details[index];try{
    if(entry.tool!=='get_transaction_details')fail('DETAIL_TOOL_INVALID');const envelope={},r=unwrap(entry.payload,envelope),d=r.data||r,t=d.transaction||{},req=entry.request,context={data:d,metadata:r.metadata,envelopeMetadata:envelope.metadata};
-   const ident=identity(d,req,packet.profileId,r.metadata),money=projectionEvidence(t,context,req),accepted=[],blocked=[];
-   const add=(field,ok,code)=>{(ok?accepted:blocked).push({field,code})};
+   const categoryAllocation=Categories.inspect({},t);const ident=identity(d,req,packet.profileId,r.metadata),money=projectionEvidence(t,context,req),accepted=[],blocked=[];
+   const add=(field,ok,code)=>{(ok?accepted:blocked).push({field,code})};if(categoryAllocation){categoryAllocation.totalMinor=money.proposalAllowed?Number(integerMinor(t.monetaryProjection.equivalentMinor)):null;add('data.transaction.categorySplits',false,categoryAllocation.code)}
    for(const f of ident.fields)add(f.field,f.state==='MATCH',f.state);
    add('request.identity',ident.code==='DETAIL_IDENTITY_CONFIRMED',ident.code);
    add('data.transaction.dueDate',!!calendarDue(t.dueDate),calendarDue(t.dueDate)?'DUE_CALENDAR_RECOGNIZED':'DUE_DATE_UNCONFIRMED');
@@ -113,7 +114,7 @@ function inspectDetailsOnly(packet,{accountLinks=[],cardLinks=[]}={}){
    const fields=DETAIL_FIELDS.map(path=>{const v=at(d,path);return {field:'data.'+path,presence:v.presence,type:v.presence==='ABSENT'?'unknown':valueType(v.value),...(/(?:dueDate|createdAt|referenceDate|effectiveDate)$/.test(path)?{format:dateFormat(v.value)}:{})}});
    const flags=[];for(const [path,o]of [['data',d],['result.metadata',r.metadata],['envelope.metadata',envelope.metadata],['result',r]])for(const field of ['requestUpdateOpenFinance','bankRefreshMayBeRequested'])if(own(o,field))flags.push({field:path+'.'+field,state:o[field]===false?'FALSE_CONFIRMED':o[field]===true?'TRUE_CONTRADICTS':'UNMAPPED'});
    const noRefresh=flags.some(f=>f.state==='TRUE_CONTRADICTS')?'CONTRADICTORY':req?.requestUpdateOpenFinance===false&&flags.some(f=>f.field.endsWith('requestUpdateOpenFinance')&&f.state==='FALSE_CONFIRMED')&&flags.some(f=>f.field.endsWith('bankRefreshMayBeRequested')&&f.state==='FALSE_CONFIRMED')?'CONFIRMED':'NOT_FULLY_REPORTED';
-   entries.push({index,occurrenceMonth:month(req?.month)?req.month:null,identity:ident.code,fields,accepted,blocked,money,noRefresh,flags,structurallyValid:ident.code==='DETAIL_IDENTITY_CONFIRMED'&&noRefresh!=='CONTRADICTORY'});
+   entries.push({index,categoryAllocation,occurrenceMonth:month(req?.month)?req.month:null,identity:ident.code,fields,accepted,blocked,money,noRefresh,flags,structurallyValid:ident.code==='DETAIL_IDENTITY_CONFIRMED'&&noRefresh!=='CONTRADICTORY'});
   }catch(e){if(!e.code)throw e;entries.push({index,structurallyValid:false,accepted:[],blocked:[{field:'response',code:e.code}]})}
  }
  return {schema:'mcp-details-mapping-report-v1',detailsOnly:true,passed:entries.length>0&&entries.every(e=>e.structurallyValid),entries,snapshot:false,complete:false,proposalAllowed:false,applyAllowed:false,replacementAllowed:false,coverageEvidence:'NO_SEARCH_PERFORMED'};
@@ -155,7 +156,7 @@ function collect(packet){
 }
 function fingerprint(t){return stable(Object.fromEntries(Object.entries(t).filter(([k])=>!['minhasFinancas','sourceFields'].includes(k))))}
 function compare(base,packet,{window,accountLinks=[],cardLinks=[],protectedRecords=[],isProtected=()=>false}={}){
- if(Array.isArray(packet?.queries)&&packet.queries.length===0){const report=inspectDetailsOnly(packet,{accountLinks,cardLinks});return {passed:report.passed,mappingOnly:true,mappingReport:report,rows:copy(base),changes:{added:0,updated:0,unchanged:base.length,protected:0,linked:0},conflicts:report.passed?[]:[{reason:'DETAILS_MAPPING_INVALID',code:'DETAILS_MAPPING_INVALID'}],notObserved:[],proposals:[],warnings:['DETAILS_ONLY_NO_SEARCH'],snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false}}
+ if(Array.isArray(packet?.queries)&&packet.queries.length===0){const report=inspectDetailsOnly(packet,{accountLinks,cardLinks});return {passed:report.passed,mappingOnly:true,mappingReport:report,rows:copy(base),changes:{added:0,updated:0,unchanged:base.length,protected:0,linked:0},conflicts:report.passed?[]:[{reason:'DETAILS_MAPPING_INVALID',code:'DETAILS_MAPPING_INVALID'}],notObserved:[],proposals:[],categoryReports:report.entries.filter(e=>e.categoryAllocation).map(e=>({...e.categoryAllocation,identity:packet.details[e.index].request||{}})),warnings:['DETAILS_ONLY_NO_SEARCH'],snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false}}
  if(packet?.capture?.detailsOnly===true)fail('DETAILS_ONLY_SCOPE_INVALID');
  if(!date(window?.from)||!date(window?.to)||window.from<CUTOFF||window.to<window.from)fail('WINDOW_INVALID');const captured=collect(packet),profile=packet.profileId,rows=copy(base),conflicts=[],notObserved=[],changes={added:0,updated:0,unchanged:0,protected:0,linked:0},byRemote=new Map(),seen=new Map(),bad=new Set(),observed=new Set(),proposals=[];
  const add=(m,k,v)=>{if(!m.has(k))m.set(k,[]);m.get(k).push(v)};base.forEach((t,i)=>{const k=remoteKey(t);if(k)add(byRemote,k,i)});
@@ -184,7 +185,7 @@ function compare(base,packet,{window,accountLinks=[],cardLinks=[],protectedRecor
    const origin=kind==='transfers'?d.originAccount:d.account,destination=kind==='transfers'?d.destinationAccount:null,account=localAccount(accountId(origin)),dest=kind==='transfers'?localAccount(accountId(destination)):'';
    for(const [compact,detail]of [[item.account,d.account],[item.originAccount,d.originAccount],[item.destinationAccount,d.destinationAccount]])if(accountId(compact)&&accountId(compact)!==accountId(detail))fail('ACCOUNT_ID_MISMATCH');
    if(kind==='transfers'&&(accountId(origin)===accountId(destination)||account===dest))fail('TRANSFER_ACCOUNTS_INVALID');
-   if(d.categorySplits?.length>1||item.categoriesCount>1)fail('SPLIT_MAPPING_REQUIRES_REVIEW');
+   if(Categories.inspect(item,d))fail('SPLIT_MAPPING_REQUIRES_REVIEW');
    const rec=recurrence(d,kind);let installment=old?.installments||'';
    if(d.installmentNumber!=null||d.installmentsCount!=null){if(!Number.isInteger(d.installmentNumber)||!Number.isInteger(d.installmentsCount)||d.installmentNumber<1||d.installmentsCount<d.installmentNumber)fail('INSTALLMENT_PARTIAL');installment=d.installmentNumber+'/'+d.installmentsCount}
    if(d.originId!=null&&!text(d.originId))fail('ORIGIN_ID_INVALID');
@@ -198,7 +199,8 @@ function compare(base,packet,{window,accountLinks=[],cardLinks=[],protectedRecor
   }catch(e){if(!e.code)throw e;conflicts.push({code:e.code,reason:e.code,evidence:{item:copy(item),detail:copy(captured.details.get(k)||null)}})}
  }
  for(const t of base){const k=remoteKey(t);if(t.minhasFinancas?.profileId===profile&&date(t.dueDate)&&t.dueDate>=window.from&&t.dueDate<=window.to&&!observed.has(k))notObserved.push({id:t.id,reason:'NOT_OBSERVED_PRESERVED'})}
- return {passed:conflicts.length===0,rows:conflicts.length?copy(base):rows,changes,conflicts,notObserved,proposals,warnings:[...new Set(captured.warnings)],snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false};
+ const categoryReports=[...seen.values()].flatMap(({item})=>{const detail=captured.details.get(key(profile,item)),review=Categories.inspect(item,detail);if(!review)return [];let totalMinor=null;try{totalMinor=minor(money(detail,captured.detailContexts.get(key(profile,item)),{profileId:profile,transactionId:item.id,type:item.type,month:item.occurrenceMonth}),2)}catch{}return [{...review,totalMinor,identity:{profileId:profile,transactionId:item.id,type:item.type,month:item.occurrenceMonth}}]});
+ return {categoryReports,passed:conflicts.length===0,rows:conflicts.length?copy(base):rows,changes,conflicts,notObserved,proposals,warnings:[...new Set(captured.warnings)],snapshot:false,complete:false,replacementAllowed:false,applyAllowed:false};
 }
 const LIMITS={Sync:{daily:500,monthly:3000},'Sync Bank':{daily:1000,monthly:6000},'Sync Bank Pro':{daily:2000,monthly:10000}};
 function callBudget({plan,dayUsed,monthUsed,calls}={}){if(!LIMITS[plan]||![dayUsed,monthUsed,calls].every(n=>Number.isSafeInteger(n)&&n>=0))return {allowed:false,code:'QUOTA_UNKNOWN'};return {allowed:dayUsed+calls<=LIMITS[plan].daily&&monthUsed+calls<=LIMITS[plan].monthly,code:'EXPLICIT_QUOTA_PLAN_ONLY',executesCalls:false}}

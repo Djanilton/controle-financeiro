@@ -25,9 +25,10 @@
         await window.msalRedirectBridge.broadcastResponseToMainFrame();
       }else{
         const entryParams=new URL(location.href).searchParams;
-        if(entryParams.get('mode')==='invoice-readonly'){await loadScript('./sources-review-loader.js?v=contract-readonly-v1');return}
+        if(entryParams.get('mode')==='invoice-readonly'){await loadScript('./sources-review-loader.js?v=20261116-categories');return}
         await loadScript('./invoice-session-policy.js?v=20261115-bootstrap-readonly');
         await Promise.all([loadScript('./vendor/msal-browser.min.js'),loadScript('./vendor/xlsx.full.min.js')]);
+        await loadScript('./minhas-financas-categories.js?v=20261116-categories');
         await loadScript('./app-core.js?v=20261022-daily-range');
         await loadScript('./financial-model.js?v=20261107-inss-history');
         await loadScript('./transaction-entry.js?v=20261021-entry');
@@ -54,12 +55,12 @@
         await loadScript('./settings-workspace.js?v=20261107-consolidated');
         await loadScript('./transfer-repair.js?v=20261115-bootstrap-readonly');
         await loadScript('./sidebar.js?v=20261107-responsive-toggle');
-        await loadScript('./minhas-financas-observations.js?v=contract-readonly-v1');
-        await loadScript('./minhas-financas-core.js?v=20261102-observations');
+        await loadScript('./minhas-financas-observations.js?v=20261116-categories');
+        await loadScript('./minhas-financas-core.js?v=20261116-categories');
         await loadScript('./minhas-financas-ui.js?v=20261115-bootstrap-readonly');
         await loadScript('./candidate-sources.js?v=20261107-consolidated');
-        await loadScript('./candidate-update.js?v=20261107-income');
-        await loadScript('./candidate-update-ui.js?v=20261107-consolidated');
+        await loadScript('./candidate-update.js?v=20261116-categories');
+        await loadScript('./candidate-update-ui.js?v=20261116-categories');
         await loadScript('./transaction-workspace.js?v=20261021-entry');
         await loadScript('./month-pivot.js?v=20261022-years');
         await loadScript('./financial-charts.js?v=20261024-filtered');
@@ -81,6 +82,7 @@
         await loadScript('./private-graph-transport.js?v=20261107-simulation-only');
         await loadScript('./invoice-batch-core.js?v=20261107-batch');
         await loadScript('./invoice-batch-ui.js?v=20261107-batch');
+        await loadScript('./minhas-financas-categories-ui.js?v=20261116-categories');
         await loadScript('./invoice-review-entry.js?v=20261115-bootstrap-readonly');
         await loadScript('./interaction-state.js?v=20261115-bootstrap-readonly');
       }
